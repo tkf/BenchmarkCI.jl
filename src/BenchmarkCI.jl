@@ -15,7 +15,7 @@ const DEFAULT_WORKSPACE = ".benchmarkci"
 is_in_ci(ENV = ENV) =
     lowercase(get(ENV, "CI", "false")) == "true" || haskey(ENV, "GITHUB_EVENT_PATH")
 
-function generate_script(default_script, project = dirname(default_script))
+function generate_script(default_script, project)
     default_script = abspath(default_script)
     project = abspath(project)
     """
@@ -47,12 +47,14 @@ function judge(
     baseline = "origin/master";
     workspace = DEFAULT_WORKSPACE,
     pkg = pwd(),
+    script = joinpath(pkg, "benchmark", "benchmarks.jl"),
+    project = dirname(script),
     progressoptions = is_in_ci() ? (dt = 60 * 9.0,) : NamedTuple(),
 )
 
     mkpath(workspace)
-    script = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
-    write(script, generate_script(joinpath(pkg, "benchmark", "benchmarks.jl")))
+    script_wrapper = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
+    write(script_wrapper, generate_script(script, project))
 
     # Make sure `origin/master` etc. exists:
     ensure_origin(target)
@@ -63,14 +65,14 @@ function judge(
         target,
         progressoptions = progressoptions,
         resultfile = joinpath(workspace, "result-target.json"),
-        script = script,
+        script = script_wrapper,
     )
     group_baseline = PkgBenchmark.benchmarkpkg(
         pkg,
         baseline,
         progressoptions = progressoptions,
         resultfile = joinpath(workspace, "result-baseline.json"),
-        script = script,
+        script = script_wrapper,
     )
     judgement = PkgBenchmark.judge(group_target, group_baseline)
     if is_in_ci()
