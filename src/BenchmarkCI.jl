@@ -3,19 +3,21 @@ module BenchmarkCI
 import JSON
 import Markdown
 using PkgBenchmark:
+    BenchmarkConfig,
     BenchmarkJudgement,
     BenchmarkResults,
     PkgBenchmark,
     baseline_result,
     export_markdown,
     target_result
+using Setfield: @set
 
 const DEFAULT_WORKSPACE = ".benchmarkci"
 
 is_in_ci(ENV = ENV) =
     lowercase(get(ENV, "CI", "false")) == "true" || haskey(ENV, "GITHUB_EVENT_PATH")
 
-function generate_script(default_script, project = dirname(default_script))
+function generate_script(default_script, project)
     default_script = abspath(default_script)
     project = abspath(project)
     """
@@ -30,6 +32,7 @@ function generate_script(default_script, project = dirname(default_script))
 end
 
 ensure_origin(::Nothing) = nothing
+ensure_origin(config::BenchmarkConfig) = ensure_origin(config.id)
 function ensure_origin(committish)
     if startswith(committish, "origin/")
         _, remote_branch = split(committish, "/"; limit = 2)
@@ -47,12 +50,18 @@ function judge(
     baseline = "origin/master";
     workspace = DEFAULT_WORKSPACE,
     pkg = pwd(),
+    script = joinpath(pkg, "benchmark", "benchmarks.jl"),
+    project = dirname(script),
     progressoptions = is_in_ci() ? (dt = 60 * 9.0,) : NamedTuple(),
 )
+    target = BenchmarkConfig(target)
+    if !(baseline isa BenchmarkConfig)
+        baseline = @set target.id = baseline
+    end
 
     mkpath(workspace)
-    script = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
-    write(script, generate_script(joinpath(pkg, "benchmark", "benchmarks.jl")))
+    script_wrapper = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
+    write(script_wrapper, generate_script(script, project))
 
     # Make sure `origin/master` etc. exists:
     ensure_origin(target)
@@ -63,14 +72,14 @@ function judge(
         target,
         progressoptions = progressoptions,
         resultfile = joinpath(workspace, "result-target.json"),
-        script = script,
+        script = script_wrapper,
     )
     group_baseline = PkgBenchmark.benchmarkpkg(
         pkg,
         baseline,
         progressoptions = progressoptions,
         resultfile = joinpath(workspace, "result-baseline.json"),
-        script = script,
+        script = script_wrapper,
     )
     judgement = PkgBenchmark.judge(group_target, group_baseline)
     if is_in_ci()
@@ -90,20 +99,22 @@ end
 
 Post judgement as comment.
 """
-postjudge(workspace::AbstractString = DEFAULT_WORKSPACE) = postjudge(_loadjudge(workspace))
+postjudge(workspace::AbstractString = DEFAULT_WORKSPACE; kwargs...) =
+    postjudge(_loadjudge(workspace); kwargs...)
 
-function postjudge(judgement::BenchmarkJudgement)
+function postjudge(judgement::BenchmarkJudgement; title = "Benchmark result")
     event_path = get(ENV, "GITHUB_EVENT_PATH", nothing)
     if event_path !== nothing
-        post_judge_github(event_path, judgement)
+        post_judge_github(event_path, (judgement = judgement, title = title))
         return
     end
     displayjudgement(judgement)
 end
 
-function printcommentmd(io, judgement)
+function printcommentmd(io, ciresult)
+    judgement = ciresult.judgement
     println(io, "<details>")
-    println(io, "<summary>Benchmark result</summary>")
+    println(io, "<summary>", ciresult.title, "</summary>")
     println(io)
     println(io, "# Judge result")
     export_markdown(io, judgement)
@@ -120,15 +131,15 @@ function printcommentmd(io, judgement)
     println(io, "</details>")
 end
 
-function printcommentjson(io, judgement)
+function printcommentjson(io, ciresult)
     comment = sprint() do io
-        printcommentmd(io, judgement)
+        printcommentmd(io, ciresult)
     end
     # https://developer.github.com/v3/issues/comments/#create-a-comment
     JSON.print(io, Dict("body" => comment::AbstractString))
 end
 
-function post_judge_github(event_path, judgement)
+function post_judge_github(event_path, ciresult)
     event = JSON.parsefile(event_path)
     url = event["pull_request"]["comments_url"]
     # https://developer.github.com/v3/activity/events/types/#pullrequestevent
@@ -159,7 +170,7 @@ function post_judge_github(event_path, judgement)
 
     response = sprint() do stdout
         open(pipeline(cmd, stdout = stdout, stderr = stderr), write = true) do io
-            printcommentjson(io, judgement)
+            printcommentjson(io, ciresult)
         end
     end
     @debug "Response from GitHub" response
