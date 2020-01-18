@@ -120,9 +120,9 @@ function printcommentmd(io, judgement)
     println(io, "</details>")
 end
 
-function printcommentjson(io; kwargs...)
+function printcommentjson(io, judgement)
     comment = sprint() do io
-        printcommentmd(io; kwargs...)
+        printcommentmd(io, judgement)
     end
     # https://developer.github.com/v3/issues/comments/#create-a-comment
     JSON.print(io, Dict("body" => comment::AbstractString))
