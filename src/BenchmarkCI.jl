@@ -92,20 +92,22 @@ end
 
 Post judgement as comment.
 """
-postjudge(workspace::AbstractString = DEFAULT_WORKSPACE) = postjudge(_loadjudge(workspace))
+postjudge(workspace::AbstractString = DEFAULT_WORKSPACE; kwargs...) =
+    postjudge(_loadjudge(workspace); kwargs...)
 
-function postjudge(judgement::BenchmarkJudgement)
+function postjudge(judgement::BenchmarkJudgement; title = "Benchmark result")
     event_path = get(ENV, "GITHUB_EVENT_PATH", nothing)
     if event_path !== nothing
-        post_judge_github(event_path, judgement)
+        post_judge_github(event_path, (judgement = judgement, title = title))
         return
     end
     displayjudgement(judgement)
 end
 
-function printcommentmd(io, judgement)
+function printcommentmd(io, ciresult)
+    judgement = ciresult.judgement
     println(io, "<details>")
-    println(io, "<summary>Benchmark result</summary>")
+    println(io, "<summary>", ciresult.title, "</summary>")
     println(io)
     println(io, "# Judge result")
     export_markdown(io, judgement)
@@ -122,15 +124,15 @@ function printcommentmd(io, judgement)
     println(io, "</details>")
 end
 
-function printcommentjson(io, judgement)
+function printcommentjson(io, ciresult)
     comment = sprint() do io
-        printcommentmd(io, judgement)
+        printcommentmd(io, ciresult)
     end
     # https://developer.github.com/v3/issues/comments/#create-a-comment
     JSON.print(io, Dict("body" => comment::AbstractString))
 end
 
-function post_judge_github(event_path, judgement)
+function post_judge_github(event_path, ciresult)
     event = JSON.parsefile(event_path)
     url = event["pull_request"]["comments_url"]
     # https://developer.github.com/v3/activity/events/types/#pullrequestevent
@@ -161,7 +163,7 @@ function post_judge_github(event_path, judgement)
 
     response = sprint() do stdout
         open(pipeline(cmd, stdout = stdout, stderr = stderr), write = true) do io
-            printcommentjson(io, judgement)
+            printcommentjson(io, ciresult)
         end
     end
     @debug "Response from GitHub" response
