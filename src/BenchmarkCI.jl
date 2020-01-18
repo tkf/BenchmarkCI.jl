@@ -3,12 +3,14 @@ module BenchmarkCI
 import JSON
 import Markdown
 using PkgBenchmark:
+    BenchmarkConfig,
     BenchmarkJudgement,
     BenchmarkResults,
     PkgBenchmark,
     baseline_result,
     export_markdown,
     target_result
+using Setfield: @set
 
 const DEFAULT_WORKSPACE = ".benchmarkci"
 
@@ -30,6 +32,7 @@ function generate_script(default_script, project)
 end
 
 ensure_origin(::Nothing) = nothing
+ensure_origin(config::BenchmarkConfig) = ensure_origin(config.id)
 function ensure_origin(committish)
     if startswith(committish, "origin/")
         _, remote_branch = split(committish, "/"; limit = 2)
@@ -51,6 +54,10 @@ function judge(
     project = dirname(script),
     progressoptions = is_in_ci() ? (dt = 60 * 9.0,) : NamedTuple(),
 )
+    target = BenchmarkConfig(target)
+    if !(baseline isa BenchmarkConfig)
+        baseline = @set target.id = baseline
+    end
 
     mkpath(workspace)
     script_wrapper = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
