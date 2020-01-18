@@ -82,7 +82,7 @@ end
 function _loadjudge(workspace)
     group_target = PkgBenchmark.readresults(joinpath(workspace, "result-target.json"))
     group_baseline = PkgBenchmark.readresults(joinpath(workspace, "result-baseline.json"))
-    return judge(group_target, group_baseline)
+    return PkgBenchmark.judge(group_target, group_baseline)
 end
 
 """
