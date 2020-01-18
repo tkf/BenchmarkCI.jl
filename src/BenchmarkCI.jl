@@ -128,7 +128,7 @@ function printcommentjson(io; kwargs...)
     JSON.print(io, Dict("body" => comment::AbstractString))
 end
 
-function post_judge_github(event_path)
+function post_judge_github(event_path, judgement)
     event = JSON.parsefile(event_path)
     url = event["pull_request"]["comments_url"]
     # https://developer.github.com/v3/activity/events/types/#pullrequestevent
