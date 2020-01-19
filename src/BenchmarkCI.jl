@@ -12,6 +12,11 @@ using PkgBenchmark:
     target_result
 using Setfield: @set
 
+Base.@kwdef struct CIResult
+    judgement::BenchmarkJudgement
+    title::String = "Benchmark result"
+end
+
 const DEFAULT_WORKSPACE = ".benchmarkci"
 
 is_in_ci(ENV = ENV) =
@@ -105,30 +110,36 @@ postjudge(workspace::AbstractString = DEFAULT_WORKSPACE; kwargs...) =
 function postjudge(judgement::BenchmarkJudgement; title = "Benchmark result")
     event_path = get(ENV, "GITHUB_EVENT_PATH", nothing)
     if event_path !== nothing
-        post_judge_github(event_path, (judgement = judgement, title = title))
+        post_judge_github(event_path, CIResult(judgement = judgement, title = title))
         return
     end
     displayjudgement(judgement)
 end
 
 function printcommentmd(io, ciresult)
-    judgement = ciresult.judgement
     println(io, "<details>")
     println(io, "<summary>", ciresult.title, "</summary>")
     println(io)
+    printresultmd(io, ciresult)
+    println(io)
+    println(io)
+    println(io, "</details>")
+end
+
+function printresultmd(io, ciresult)
+    judgement = ciresult.judgement
     println(io, "# Judge result")
     export_markdown(io, judgement)
     println(io)
     println(io)
+    println(io, "---")
     println(io, "# Target result")
     export_markdown(io, target_result(judgement))
     println(io)
     println(io)
+    println(io, "---")
     println(io, "# Baseline result")
     export_markdown(io, baseline_result(judgement))
-    println(io)
-    println(io)
-    println(io, "</details>")
 end
 
 function printcommentjson(io, ciresult)
@@ -177,35 +188,14 @@ function post_judge_github(event_path, ciresult)
     @info "Comment posted."
 end
 
-function displayresult(result)
-    md = sprint(export_markdown, result)
-    md = replace(md, ":x:" => "❌")
-    md = replace(md, ":white_check_mark:" => "✅")
-    display(Markdown.parse(md))
-end
-
-function printnewsection(name)
-    println()
-    println()
-    println()
-    printstyled("▃"^displaysize(stdout)[2]; color = :blue)
-    println()
-    printstyled(name; bold = true)
-    println()
-    println()
-end
-
 displayjudgement(workspace::AbstractString = DEFAULT_WORKSPACE) =
     displayjudgement(_loadjudge(workspace))
 
 function displayjudgement(judgement::BenchmarkJudgement)
-    displayresult(judgement)
-
-    printnewsection("Target result")
-    displayresult(target_result(judgement))
-
-    printnewsection("Baseline result")
-    displayresult(baseline_result(judgement))
+    io = IOBuffer()
+    printresultmd(io, CIResult(judgement = judgement))
+    seekstart(io)
+    display(Markdown.parse(io))
 end
 
 runall(args...; kwargs...) = postjudge(judge(args...; kwargs...))
