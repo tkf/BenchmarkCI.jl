@@ -105,6 +105,10 @@ function _loadjudge(workspace)
     return PkgBenchmark.judge(group_target, group_baseline)
 end
 
+# Used only for testing:
+_loadciresult(workspace::AbstractString = DEFAULT_WORKSPACE) =
+    CIResult(judgement = _loadjudge(workspace))
+
 """
     postjudge()
 
