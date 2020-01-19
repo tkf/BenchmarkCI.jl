@@ -13,4 +13,13 @@ using Test
             end
         end
     end
+
+    err = nothing
+    @test try
+        BenchmarkCI.error_on_missing_github_token()
+        false
+    catch err
+        true
+    end
+    @test occursin("`GITHUB_TOKEN` is not set", sprint(showerror, err))
 end
