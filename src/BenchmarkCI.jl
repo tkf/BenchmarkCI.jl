@@ -79,6 +79,7 @@ function judge(
         resultfile = joinpath(workspace, "result-target.json"),
         script = script_wrapper,
     )
+    @debug("`git status`", output = Text(read(`git status`, String)))
     group_baseline = PkgBenchmark.benchmarkpkg(
         pkg,
         baseline,
