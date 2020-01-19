@@ -16,6 +16,11 @@ using Setfield: @set
 
 include("runtimeinfo.jl")
 
+Base.@kwdef struct CIResult
+    judgement::BenchmarkJudgement
+    title::String = "Benchmark result"
+end
+
 const DEFAULT_WORKSPACE = ".benchmarkci"
 
 is_in_ci(ENV = ENV) =
@@ -111,7 +116,7 @@ postjudge(workspace::AbstractString = DEFAULT_WORKSPACE; kwargs...) =
 function postjudge(judgement::BenchmarkJudgement; title = "Benchmark result")
     event_path = get(ENV, "GITHUB_EVENT_PATH", nothing)
     if event_path !== nothing
-        post_judge_github(event_path, (judgement = judgement, title = title))
+        post_judge_github(event_path, CIResult(judgement = judgement, title = title))
         return
     end
     displayjudgement(judgement)
@@ -212,7 +217,7 @@ displayjudgement(workspace::AbstractString = DEFAULT_WORKSPACE) =
 
 function displayjudgement(judgement::BenchmarkJudgement)
     io = IOBuffer()
-    printresultmd(io, (judgement = judgement, title = "Benchmark result"))
+    printresultmd(io, CIResult(judgement = judgement))
     seekstart(io)
     display(Markdown.parse(io))
 end
