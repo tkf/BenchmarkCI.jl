@@ -24,7 +24,9 @@ function Base.show(io::IO, ::MIME"text/markdown", info::RunTimeInfo)
     println(io, "| BLAS #threads | ", something(info.blas_num_threads, "unknown"), " |")
     println(io, "| `BLAS.vendor()` | `", info.blas_vendor, "` |")
     println(io, "| `Sys.CPU_THREADS` | ", Sys.CPU_THREADS, " |")
-    println(io, "| `Threads.nthreads()` | ", Threads.nthreads(), " |")
+    # Hiding `nthreads` ATM as it can be misleading when it is set via
+    # `BenchmarkConfig`:
+    # println(io, "| `Threads.nthreads()` | ", Threads.nthreads(), " |")
 end
 
 
