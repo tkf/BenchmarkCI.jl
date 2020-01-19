@@ -1,6 +1,8 @@
 module BenchmarkCI
 
+import CpuId
 import JSON
+import LinearAlgebra
 import Markdown
 using PkgBenchmark:
     BenchmarkConfig,
@@ -12,10 +14,7 @@ using PkgBenchmark:
     target_result
 using Setfield: @set
 
-Base.@kwdef struct CIResult
-    judgement::BenchmarkJudgement
-    title::String = "Benchmark result"
-end
+include("runtimeinfo.jl")
 
 const DEFAULT_WORKSPACE = ".benchmarkci"
 
@@ -110,7 +109,7 @@ postjudge(workspace::AbstractString = DEFAULT_WORKSPACE; kwargs...) =
 function postjudge(judgement::BenchmarkJudgement; title = "Benchmark result")
     event_path = get(ENV, "GITHUB_EVENT_PATH", nothing)
     if event_path !== nothing
-        post_judge_github(event_path, CIResult(judgement = judgement, title = title))
+        post_judge_github(event_path, (judgement = judgement, title = title))
         return
     end
     displayjudgement(judgement)
@@ -140,6 +139,24 @@ function printresultmd(io, ciresult)
     println(io, "---")
     println(io, "# Baseline result")
     export_markdown(io, baseline_result(judgement))
+    println(io)
+    println(io)
+    println(io, "---")
+    println(io, "# Runtime information")
+    show(io, MIME"text/markdown"(), runtimeinfo())
+    println(io)
+    md = try
+        sprint() do buffer
+            show(buffer, MIME"text/markdown"(), CpuId.cpuinfo())
+        end
+    catch err
+        @error(
+            """`show(_, "text/markdown", CpuId.cpuinfo())` failed""",
+            exception = (err, catch_backtrace())
+        )
+        nothing
+    end
+    md === nothing || println(io, md)
 end
 
 function printcommentjson(io, ciresult)
@@ -193,7 +210,7 @@ displayjudgement(workspace::AbstractString = DEFAULT_WORKSPACE) =
 
 function displayjudgement(judgement::BenchmarkJudgement)
     io = IOBuffer()
-    printresultmd(io, CIResult(judgement = judgement))
+    printresultmd(io, (judgement = judgement, title = "Benchmark result"))
     seekstart(io)
     display(Markdown.parse(io))
 end
