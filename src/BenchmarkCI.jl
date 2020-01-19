@@ -25,9 +25,10 @@ function generate_script(default_script, project)
     default_script = abspath(default_script)
     project = abspath(project)
     """
-    if $(is_in_ci())
-        @info "Executing in CI. Instantiating benchmark environment..."
-        using Pkg
+    let Pkg = Base.require(Base.PkgId(
+            Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"),
+            "Pkg",
+        ))
         Pkg.activate($(repr(project)))
         Pkg.instantiate()
     end
