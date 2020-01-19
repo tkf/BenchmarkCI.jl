@@ -8,11 +8,7 @@ using Test
             cd("BenchmarkCIExample.jl")
 
             # Run a test without $GITHUB_TOKEN
-            withenv(
-                "JULIA_LOAD_PATH" => "@:@stdlib",
-                "CI" => "true",
-                "GITHUB_EVENT_PATH" => nothing,
-            ) do
+            withenv("CI" => "true", "GITHUB_EVENT_PATH" => nothing) do
                 BenchmarkCI.runall()
             end
         end
