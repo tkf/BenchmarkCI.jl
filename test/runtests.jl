@@ -1,3 +1,4 @@
+import JSON
 using BenchmarkCI
 using Test
 
@@ -11,6 +12,23 @@ using Test
             withenv("CI" => "true", "GITHUB_EVENT_PATH" => nothing) do
                 BenchmarkCI.runall()
             end
+
+            ciresult = BenchmarkCI._loadciresult()
+
+            io = IOBuffer()
+            BenchmarkCI.printcommentjson(io, ciresult)
+            seekstart(io)
+            dict = JSON.parse(io)
+            @test dict["body"] isa String
         end
     end
+
+    err = nothing
+    @test try
+        BenchmarkCI.error_on_missing_github_token()
+        false
+    catch err
+        true
+    end
+    @test occursin("`GITHUB_TOKEN` is not set", sprint(showerror, err))
 end

@@ -105,6 +105,10 @@ function _loadjudge(workspace)
     return PkgBenchmark.judge(group_target, group_baseline)
 end
 
+# Used only for testing:
+_loadciresult(workspace::AbstractString = DEFAULT_WORKSPACE) =
+    CIResult(judgement = _loadjudge(workspace))
+
 """
     postjudge()
 
@@ -174,6 +178,18 @@ function printcommentjson(io, ciresult)
     JSON.print(io, Dict("body" => comment::AbstractString))
 end
 
+function error_on_missing_github_token()
+    error("""
+    Environment variable `GITHUB_TOKEN` is not set.  The workflow file
+    must contain configuration such as:
+
+        - name: Post result
+          run: julia -e "using BenchmarkCI; BenchmarkCI.postjudge()"
+          env:
+            GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+    """)
+end
+
 function post_judge_github(event_path, ciresult)
     event = JSON.parsefile(event_path)
     url = event["pull_request"]["comments_url"]
@@ -181,18 +197,7 @@ function post_judge_github(event_path, ciresult)
     @debug "Posting to: $url"
 
     GITHUB_TOKEN = get(ENV, "GITHUB_TOKEN", nothing)
-    if GITHUB_TOKEN === nothing
-        error("""
-        Environment variable `GITHUB_TOKEN` is not set.  The workflow
-        file must contain configuration such as:
-
-            - name: Post result
-              run: julia -e "using BenchmarkCI; BenchmarkCI.postjudge()"
-              env:
-                GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-        """)
-        return
-    end
+    GITHUB_TOKEN === nothing && error_on_missing_github_token()
 
     cmd = ```
     curl
