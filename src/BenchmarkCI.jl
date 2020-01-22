@@ -81,7 +81,7 @@ function judge(
         ch = Channel() do ch
             t0 = time_ns()
             while true
-                sleep(60 * 5)
+                sleep(10)
                 isopen(ch) || break
                 minutes = floor((time_ns() - t0) / 1e9 / 60)
                 @info "$minutes minutes passed.  Still running `judge`..."
