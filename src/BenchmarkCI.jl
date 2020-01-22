@@ -83,7 +83,7 @@ function judge(
             while true
                 sleep(10)
                 isopen(ch) || break
-                minutes = floor((time_ns() - t0) / 1e9 / 60)
+                minutes = floor(Int, (time_ns() - t0) / 1e9 / 60)
                 @info "$minutes minutes passed.  Still running `judge`..."
             end
         end
