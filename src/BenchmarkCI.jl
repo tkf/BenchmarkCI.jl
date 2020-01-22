@@ -52,6 +52,12 @@ function ensure_origin(committish)
     end
 end
 
+function format_period(seconds::Real)
+    seconds < 60 && return string(floor(Int, seconds), " seconds")
+    minutes = floor(Int, seconds / 60)
+    return string(minutes, " minutes ", floor(Int, seconds - 60 * minutes), " seconds")
+end
+
 judge(; target = nothing, baseline = "origin/master", kwargs...) =
     judge(target, baseline; kwargs...)
 
@@ -92,7 +98,7 @@ function judge(
     end
 
     try
-        group_target = PkgBenchmark.benchmarkpkg(
+        time_target = @elapsed group_target = PkgBenchmark.benchmarkpkg(
             pkg,
             target,
             progressoptions = progressoptions,
@@ -100,13 +106,18 @@ function judge(
             script = script_wrapper,
         )
         @debug("`git status`", output = Text(read(`git status`, String)))
-        group_baseline = PkgBenchmark.benchmarkpkg(
+        time_baseline = @elapsed group_baseline = PkgBenchmark.benchmarkpkg(
             pkg,
             baseline,
             progressoptions = progressoptions,
             resultfile = joinpath(workspace, "result-baseline.json"),
             script = script_wrapper,
         )
+        @info """
+        Finish running benchmarks.
+        * Target: $(format_period(time_target))
+        * Baseline: $(format_period(time_baseline))
+        """
         judgement = PkgBenchmark.judge(group_target, group_baseline)
         if is_in_ci()
             display(judgement)

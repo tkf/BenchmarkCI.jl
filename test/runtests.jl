@@ -3,6 +3,9 @@ using BenchmarkCI
 using Test
 
 @testset "BenchmarkCI.jl" begin
+    @test BenchmarkCI.format_period(3) == "3 seconds"
+    @test BenchmarkCI.format_period(125) == "2 minutes 5 seconds"
+
     mktempdir(prefix = "BenchmarkCI_jl_test_") do dir
         cd(dir) do
             run(`git clone https://github.com/tkf/BenchmarkCIExample.jl`)
