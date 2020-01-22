@@ -77,26 +77,44 @@ function judge(
     ensure_origin(target)
     ensure_origin(baseline)
 
-    group_target = PkgBenchmark.benchmarkpkg(
-        pkg,
-        target,
-        progressoptions = progressoptions,
-        resultfile = joinpath(workspace, "result-target.json"),
-        script = script_wrapper,
-    )
-    @debug("`git status`", output = Text(read(`git status`, String)))
-    group_baseline = PkgBenchmark.benchmarkpkg(
-        pkg,
-        baseline,
-        progressoptions = progressoptions,
-        resultfile = joinpath(workspace, "result-baseline.json"),
-        script = script_wrapper,
-    )
-    judgement = PkgBenchmark.judge(group_target, group_baseline)
     if is_in_ci()
-        display(judgement)
+        ch = Channel() do ch
+            t0 = time_ns()
+            while true
+                sleep(60 * 5)
+                isopen(ch) || break
+                minutes = floor((time_ns() - t0) / 1e9 / 60)
+                @info "$minutes minutes passed.  Still running `judge`..."
+            end
+        end
+    else
+        ch = nothing
     end
-    return judgement
+
+    try
+        group_target = PkgBenchmark.benchmarkpkg(
+            pkg,
+            target,
+            progressoptions = progressoptions,
+            resultfile = joinpath(workspace, "result-target.json"),
+            script = script_wrapper,
+        )
+        @debug("`git status`", output = Text(read(`git status`, String)))
+        group_baseline = PkgBenchmark.benchmarkpkg(
+            pkg,
+            baseline,
+            progressoptions = progressoptions,
+            resultfile = joinpath(workspace, "result-baseline.json"),
+            script = script_wrapper,
+        )
+        judgement = PkgBenchmark.judge(group_target, group_baseline)
+        if is_in_ci()
+            display(judgement)
+        end
+        return judgement
+    finally
+        ch === nothing || close(ch)
+    end
 end
 
 function _loadjudge(workspace)
