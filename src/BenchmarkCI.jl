@@ -53,7 +53,7 @@ function ensure_origin(committish)
     end
 end
 
-function maybe_with_merged_project(f, project)
+function maybe_with_merged_project(f, project, pkgdir)
     project = abspath(project)
     dir = endswith(project, ".toml") ? dirname(project) : project
     if any(isfile.(joinpath.(dir, ("JuliaManifest.toml", "Manifest.toml"))))
@@ -73,10 +73,9 @@ function maybe_with_merged_project(f, project)
         return mktempdir(prefix = "BenchmarkCI_jl_") do tmp
             tmpproject = joinpath(tmp, "Project.toml")
             cp(file, tmpproject)
-            parentproject = dirname(dir)
             code = """
             using Pkg
-            Pkg.develop(Pkg.PackageSpec(path = $(repr(parentproject))))
+            Pkg.develop(Pkg.PackageSpec(path = $(repr(pkgdir))))
             """
             run(setenv(
                 `$(Base.julia_cmd()) --startup-file=no --project=$tmpproject -e $code`,
@@ -118,7 +117,7 @@ function judge(
     mkpath(workspace)
     script_wrapper = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
 
-    maybe_with_merged_project(project) do tmpproject, should_resolve
+    maybe_with_merged_project(project, pkgdir) do tmpproject, should_resolve
         write(script_wrapper, generate_script(script, tmpproject, should_resolve))
         _judge(;
             target = target,
