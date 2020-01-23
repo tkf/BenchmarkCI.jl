@@ -75,13 +75,13 @@ function maybe_with_merged_project(f, project)
             cp(file, tmpproject)
             parentproject = dirname(dir)
             code = """
-            Pkg = Base.require(Base.PkgId(
-                Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"),
-                "Pkg",
-            ))
+            using Pkg
             Pkg.develop(Pkg.PackageSpec(path = $(repr(parentproject))))
             """
-            run(`$(Base.julia_cmd()) --startup-file=no --project=$tmpproject -e $code`)
+            run(setenv(
+                `$(Base.julia_cmd()) --startup-file=no --project=$tmpproject -e $code`,
+                "JULIA_LOAD_PATH" => "@:@stdlib",
+            ))
             @info "Using temporary project `$tmp`."
             f(tmpproject, true)  # should_resolve = true
         end
