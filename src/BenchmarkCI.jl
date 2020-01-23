@@ -233,7 +233,7 @@ function post_judge_github(event_path, ciresult)
     --request POST
     $url
     -H "Content-Type: application/json"
-    -H "Authorization: token $GITHUB_TOKEN"
+    --user "tkf-bot:$GITHUB_TOKEN"
     --data @-
     ```
 
