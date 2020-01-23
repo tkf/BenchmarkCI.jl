@@ -227,6 +227,7 @@ function post_judge_github(event_path, ciresult)
 
     GITHUB_TOKEN = get(ENV, "GITHUB_TOKEN", nothing)
     GITHUB_TOKEN === nothing && error_on_missing_github_token()
+    @show length(GITHUB_TOKEN)
 
     cmd = ```
     curl
