@@ -230,6 +230,7 @@ function post_judge_github(event_path, ciresult)
 
     cmd = ```
     curl
+    --include
     --request POST
     $url
     -H "Content-Type: application/json"
@@ -242,7 +243,7 @@ function post_judge_github(event_path, ciresult)
             printcommentjson(io, ciresult)
         end
     end
-    @debug "Response from GitHub" response
+    @debug "Response from GitHub" Text(response)
     @info "Comment posted."
 end
 
