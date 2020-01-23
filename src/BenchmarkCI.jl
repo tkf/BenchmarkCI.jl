@@ -58,7 +58,7 @@ function maybe_with_merged_project(f, project)
     dir = endswith(project, ".toml") ? dirname(project) : project
     if any(isfile.(joinpath.(dir, ("JuliaManifest.toml", "Manifest.toml"))))
         @info "Using existing manifest file."
-        f(project, false)  # should_resolve = false
+        return f(project, false)  # should_resolve = false
     else
         if isfile(project)
             file = isfile(project)
@@ -70,7 +70,7 @@ function maybe_with_merged_project(f, project)
             end
             file = candidates[i]
         end
-        mktempdir(prefix = "BenchmarkCI_jl_") do tmp
+        return mktempdir(prefix = "BenchmarkCI_jl_") do tmp
             tmpproject = joinpath(tmp, "Project.toml")
             cp(file, tmpproject)
             parentproject = dirname(dir)
@@ -87,7 +87,6 @@ function maybe_with_merged_project(f, project)
             f(tmpproject, true)  # should_resolve = true
         end
     end
-    return
 end
 
 function format_period(seconds::Real)
