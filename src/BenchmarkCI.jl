@@ -101,8 +101,8 @@ function judge(
     target,
     baseline = "origin/master";
     workspace = DEFAULT_WORKSPACE,
-    pkg = pwd(),
-    script = joinpath(pkg, "benchmark", "benchmarks.jl"),
+    pkgdir = pwd(),
+    script = joinpath(pkgdir, "benchmark", "benchmarks.jl"),
     project = dirname(script),
     progressoptions = is_in_ci() ? (dt = 60 * 9.0,) : NamedTuple(),
 )
@@ -124,7 +124,7 @@ function judge(
             target = target,
             baseline = baseline,
             workspace = workspace,
-            pkg = pkg,
+            pkgdir = pkgdir,
             benchmarkpkg_kwargs = (
                 progressoptions = progressoptions,
                 script = script_wrapper,
@@ -154,18 +154,18 @@ function noisily(f)
     end
 end
 
-function _judge(; target, baseline, workspace, pkg, benchmarkpkg_kwargs)
+function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
 
     noisily() do
         time_target = @elapsed group_target = PkgBenchmark.benchmarkpkg(
-            pkg,
+            pkgdir,
             target;
             resultfile = joinpath(workspace, "result-target.json"),
             benchmarkpkg_kwargs...,
         )
         @debug("`git status`", output = Text(read(`git status`, String)))
         time_baseline = @elapsed group_baseline = PkgBenchmark.benchmarkpkg(
-            pkg,
+            pkgdir,
             baseline;
             resultfile = joinpath(workspace, "result-baseline.json"),
             benchmarkpkg_kwargs...,
