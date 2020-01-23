@@ -79,7 +79,6 @@ function maybe_with_merged_project(f, project)
                 Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"),
                 "Pkg",
             ))
-            Pkg.activate($(repr(tmpproject)))
             Pkg.develop(Pkg.PackageSpec(path = $(repr(parentproject))))
             """
             run(`$(Base.julia_cmd()) --startup-file=no --project=$tmpproject -e $code`)
