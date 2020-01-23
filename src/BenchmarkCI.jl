@@ -61,7 +61,7 @@ function maybe_with_merged_project(f, project)
         return f(project, false)  # should_resolve = false
     else
         if isfile(project)
-            file = isfile(project)
+            file = project
         else
             candidates = joinpath.(dir, ("JuliaProject.toml", "Project.toml"))
             i = findfirst(isfile, candidates)

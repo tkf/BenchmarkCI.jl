@@ -14,6 +14,7 @@ using Test
             # Run a test without $GITHUB_TOKEN
             withenv("CI" => "true", "GITHUB_EVENT_PATH" => nothing) do
                 BenchmarkCI.runall()
+                BenchmarkCI.runall(project = "benchmark/Project.toml")
             end
 
             ciresult = BenchmarkCI._loadciresult()
