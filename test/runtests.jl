@@ -17,6 +17,15 @@ using Test
                 BenchmarkCI.runall(project = "benchmark/Project.toml")
             end
 
+            err = nothing
+            @test try
+                BenchmarkCI.judge(script = joinpath(dir, "nonexisting", "script.jl"))
+                false
+            catch err
+                true
+            end
+            @test occursin("One of the following files must exist:", sprint(showerror, err))
+
             ciresult = BenchmarkCI._loadciresult()
 
             io = IOBuffer()
