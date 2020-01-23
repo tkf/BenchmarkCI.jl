@@ -85,8 +85,6 @@ jobs:
         run: julia -e 'using Pkg; pkg"add PkgBenchmark https://github.com/tkf/BenchmarkCI.jl"'
       - name: Run benchmarks
         run: julia -e "using BenchmarkCI; BenchmarkCI.judge()"
-        env:
-          JULIA_LOAD_PATH: '@:.:'
       - name: Post results
         run: julia -e "using BenchmarkCI; BenchmarkCI.postjudge()"
         env:
