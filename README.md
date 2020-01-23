@@ -1,5 +1,6 @@
 # BenchmarkCI.jl
 
+![Lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
 [![CI Status][ci-img]][ci-url]
 [![codecov.io][codecov-img]][codecov-url]
 
