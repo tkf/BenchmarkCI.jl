@@ -12,10 +12,17 @@ using Test
             cd("BenchmarkCIExample.jl")
 
             # Run a test without $GITHUB_TOKEN
-            withenv("CI" => "true", "GITHUB_EVENT_PATH" => nothing) do
-                BenchmarkCI.runall()
-                BenchmarkCI.runall(project = "benchmark/Project.toml")
+            function runtests(target)
+                @testset "$target" begin
+                    withenv("CI" => "true", "GITHUB_EVENT_PATH" => nothing) do
+                        BenchmarkCI.runall(target = target)
+                        BenchmarkCI.runall(target = target, project = "benchmark/Project.toml")
+                    end
+                end
             end
+
+            runtests("testcase/0000-with-manifest")
+            runtests("testcase/0001-without-manifest")
 
             err = nothing
             @test try
