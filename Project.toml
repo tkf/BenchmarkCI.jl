@@ -12,6 +12,7 @@ PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 
 [compat]
+PkgBenchmark = "0.2"
 julia = "1"
 
 [extras]
