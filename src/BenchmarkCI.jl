@@ -163,6 +163,7 @@ function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
             benchmarkpkg_kwargs...,
         )
         @debug("`git status`", output = Text(read(`git status`, String)))
+        @debug("`git diff`", output = Text(read(`git diff`, String)))
         time_baseline = @elapsed group_baseline = PkgBenchmark.benchmarkpkg(
             pkgdir,
             baseline;
