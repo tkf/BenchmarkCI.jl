@@ -26,7 +26,7 @@ const DEFAULT_WORKSPACE = ".benchmarkci"
 is_in_ci(ENV = ENV) =
     lowercase(get(ENV, "CI", "false")) == "true" || haskey(ENV, "GITHUB_EVENT_PATH")
 
-function generate_script(default_script, project)
+function generate_script(default_script, project, should_resolve)
     default_script = abspath(default_script)
     project = abspath(project)
     """
@@ -35,6 +35,7 @@ function generate_script(default_script, project)
             "Pkg",
         ))
         Pkg.activate($(repr(project)))
+        $(repr(should_resolve)) && Pkg.resolve()
         Pkg.instantiate()
     end
     include($(repr(default_script)))
@@ -52,6 +53,40 @@ function ensure_origin(committish)
     end
 end
 
+function maybe_with_merged_project(f, project, pkgdir)
+    project = abspath(project)
+    dir = endswith(project, ".toml") ? dirname(project) : project
+    if any(isfile.(joinpath.(dir, ("JuliaManifest.toml", "Manifest.toml"))))
+        @info "Using existing manifest file."
+        return f(project, false)  # should_resolve = false
+    else
+        if isfile(project)
+            file = project
+        else
+            candidates = joinpath.(dir, ("JuliaProject.toml", "Project.toml"))
+            i = findfirst(isfile, candidates)
+            if i === nothing
+                error("One of the following files must exist:\n", join(candidates, "\n"))
+            end
+            file = candidates[i]
+        end
+        return mktempdir(prefix = "BenchmarkCI_jl_") do tmp
+            tmpproject = joinpath(tmp, "Project.toml")
+            cp(file, tmpproject)
+            code = """
+            using Pkg
+            Pkg.develop(Pkg.PackageSpec(path = $(repr(pkgdir))))
+            """
+            run(setenv(
+                `$(Base.julia_cmd()) --startup-file=no --project=$tmpproject -e $code`,
+                "JULIA_LOAD_PATH" => "@:@stdlib",
+            ))
+            @info "Using temporary project `$tmp`."
+            f(tmpproject, true)  # should_resolve = true
+        end
+    end
+end
+
 function format_period(seconds::Real)
     seconds < 60 && return string(floor(Int, seconds), " seconds")
     minutes = floor(Int, seconds / 60)
@@ -65,8 +100,8 @@ function judge(
     target,
     baseline = "origin/master";
     workspace = DEFAULT_WORKSPACE,
-    pkg = pwd(),
-    script = joinpath(pkg, "benchmark", "benchmarks.jl"),
+    pkgdir = pwd(),
+    script = joinpath(pkgdir, "benchmark", "benchmarks.jl"),
     project = dirname(script),
     progressoptions = is_in_ci() ? (dt = 60 * 9.0,) : NamedTuple(),
 )
@@ -75,14 +110,29 @@ function judge(
         baseline = @set target.id = baseline
     end
 
-    mkpath(workspace)
-    script_wrapper = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
-    write(script_wrapper, generate_script(script, project))
-
     # Make sure `origin/master` etc. exists:
     ensure_origin(target)
     ensure_origin(baseline)
 
+    mkpath(workspace)
+    script_wrapper = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
+
+    maybe_with_merged_project(project, pkgdir) do tmpproject, should_resolve
+        write(script_wrapper, generate_script(script, tmpproject, should_resolve))
+        _judge(;
+            target = target,
+            baseline = baseline,
+            workspace = workspace,
+            pkgdir = pkgdir,
+            benchmarkpkg_kwargs = (
+                progressoptions = progressoptions,
+                script = script_wrapper,
+            ),
+        )
+    end
+end
+
+function noisily(f)
     if is_in_ci()
         ch = Channel() do ch
             t0 = time_ns()
@@ -93,25 +143,31 @@ function judge(
                 @info "$minutes minutes passed.  Still running `judge`..."
             end
         end
+        try
+            f()
+        finally
+            close(ch)
+        end
     else
-        ch = nothing
+        f()
     end
+end
 
-    try
+function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
+
+    noisily() do
         time_target = @elapsed group_target = PkgBenchmark.benchmarkpkg(
-            pkg,
-            target,
-            progressoptions = progressoptions,
+            pkgdir,
+            target;
             resultfile = joinpath(workspace, "result-target.json"),
-            script = script_wrapper,
+            benchmarkpkg_kwargs...,
         )
         @debug("`git status`", output = Text(read(`git status`, String)))
         time_baseline = @elapsed group_baseline = PkgBenchmark.benchmarkpkg(
-            pkg,
-            baseline,
-            progressoptions = progressoptions,
+            pkgdir,
+            baseline;
             resultfile = joinpath(workspace, "result-baseline.json"),
-            script = script_wrapper,
+            benchmarkpkg_kwargs...,
         )
         @info """
         Finish running benchmarks.
@@ -123,8 +179,6 @@ function judge(
             display(judgement)
         end
         return judgement
-    finally
-        ch === nothing || close(ch)
     end
 end
 
@@ -255,6 +309,7 @@ function displayjudgement(judgement::BenchmarkJudgement)
     printresultmd(io, CIResult(judgement = judgement))
     seekstart(io)
     display(Markdown.parse(io))
+    display(Text("\n"))
 end
 
 runall(args...; kwargs...) = postjudge(judge(args...; kwargs...))
