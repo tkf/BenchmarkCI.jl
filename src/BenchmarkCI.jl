@@ -309,6 +309,7 @@ function displayjudgement(judgement::BenchmarkJudgement)
     printresultmd(io, CIResult(judgement = judgement))
     seekstart(io)
     display(Markdown.parse(io))
+    display(Text("\n"))
 end
 
 runall(args...; kwargs...) = postjudge(judge(args...; kwargs...))
