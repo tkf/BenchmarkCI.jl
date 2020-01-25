@@ -132,21 +132,17 @@ function judge(
     end
 end
 
-function noisily(f)
-    if is_in_ci()
-        ch = Channel() do ch
-            t0 = time_ns()
-            while true
-                sleep(60 * 5)
-                isopen(ch) || break
-                minutes = floor(Int, (time_ns() - t0) / 1e9 / 60)
-                @info "$minutes minutes passed.  Still running `judge`..."
-            end
+function noisily(f, yes::Bool = is_in_ci(); interval = 60 * 5)
+    if yes
+        t0 = time_ns()
+        timer = Timer(interval; interval = interval) do _
+            tstr = format_period(floor(Int, (time_ns() - t0) / 1e9))
+            @info "$tstr passed.  Still running `judge`..."
         end
         try
             f()
         finally
-            close(ch)
+            close(timer)
         end
     else
         f()
