@@ -10,6 +10,9 @@ declared by
 [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl) /
 [PkgBenchmark.jl](https://github.com/JuliaCI/PkgBenchmark.jl) API.
 
+**Warning** This package is still experimental.  Make sure to fix the
+version number in your CI setup.
+
 ## Setup
 
 BenchmarkCI.jl requires PkgBenchmark.jl to work.  See
@@ -38,7 +41,7 @@ jobs:
         with:
           version: 1.3
       - name: Install dependencies
-        run: julia -e 'using Pkg; pkg"add PkgBenchmark https://github.com/tkf/BenchmarkCI.jl"'
+        run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
       - name: Run benchmarks
         run: julia -e "using BenchmarkCI; BenchmarkCI.judge()"
       - name: Post results
@@ -82,7 +85,7 @@ jobs:
         with:
           version: 1.3
       - name: Install dependencies
-        run: julia -e 'using Pkg; pkg"add PkgBenchmark https://github.com/tkf/BenchmarkCI.jl"'
+        run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
       - name: Run benchmarks
         run: julia -e "using BenchmarkCI; BenchmarkCI.judge()"
       - name: Post results
