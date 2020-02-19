@@ -43,9 +43,9 @@ jobs:
       - name: Install dependencies
         run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
       - name: Run benchmarks
-        run: julia -e "using BenchmarkCI; BenchmarkCI.judge()"
+        run: julia -e 'using BenchmarkCI; BenchmarkCI.judge()'
       - name: Post results
-        run: julia -e "using BenchmarkCI; BenchmarkCI.postjudge()"
+        run: julia -e 'using BenchmarkCI; BenchmarkCI.postjudge()'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -87,9 +87,9 @@ jobs:
       - name: Install dependencies
         run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
       - name: Run benchmarks
-        run: julia -e "using BenchmarkCI; BenchmarkCI.judge()"
+        run: julia -e 'using BenchmarkCI; BenchmarkCI.judge()'
       - name: Post results
-        run: julia -e "using BenchmarkCI; BenchmarkCI.postjudge()"
+        run: julia -e 'using BenchmarkCI; BenchmarkCI.postjudge()'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
