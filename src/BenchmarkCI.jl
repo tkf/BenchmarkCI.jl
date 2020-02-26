@@ -94,6 +94,24 @@ function format_period(seconds::Real)
     return string(minutes, " minutes ", floor(Int, seconds - 60 * minutes), " seconds")
 end
 
+"""
+    judge()
+
+Run `benchmarkpkg` on `target` and `baseline`.
+
+# Keyword Arguments
+- `target :: Union{Nothing, AbstractString, BenchmarkConfig} = nothing`:
+  Benchmark target configuration.  Default to the checked out working tree.  A
+  git commitish can be passed as a string.  `PkgBenchmark.BenchmarkConfig`
+  can be used for more detailed control (see PkgBenchmark.jl manual).
+- `baseline :: Union{AbstractString, BenchmarkConfig} = "origin/master"`:
+  Benchmark baseline configuration.  See `target.`
+- `pkgdir :: AbstractString = pwd()`: Package root directory.
+- `script :: AbstractString = "\$pkgdir/benchmark/benchmarks.jl"`: The script
+  that defines the `SUITE` global variable/constant.
+- `project :: AbstractString = dirname(script)`: The project used to define
+  and run benchmarks.
+"""
 judge(; target = nothing, baseline = "origin/master", kwargs...) =
     judge(target, baseline; kwargs...)
 
@@ -191,7 +209,7 @@ _loadciresult(workspace::AbstractString = DEFAULT_WORKSPACE) =
     CIResult(judgement = _loadjudge(workspace))
 
 """
-    postjudge()
+    postjudge(; title = "Benchmark result")
 
 Post judgement as comment.
 """
@@ -299,6 +317,11 @@ function post_judge_github(event_path, ciresult)
     @info "Comment posted."
 end
 
+"""
+    displayjudgement()
+
+Print result of `BenchmarkCI.judge`.
+"""
 displayjudgement(workspace::AbstractString = DEFAULT_WORKSPACE) =
     displayjudgement(_loadjudge(workspace))
 
