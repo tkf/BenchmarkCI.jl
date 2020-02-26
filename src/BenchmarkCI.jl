@@ -103,7 +103,6 @@ function judge(
     pkgdir = pwd(),
     script = joinpath(pkgdir, "benchmark", "benchmarks.jl"),
     project = dirname(script),
-    progressoptions = is_in_ci() ? (dt = 60 * 9.0,) : NamedTuple(),
 )
     target = BenchmarkConfig(target)
     if !(baseline isa BenchmarkConfig)
@@ -125,7 +124,6 @@ function judge(
             workspace = workspace,
             pkgdir = pkgdir,
             benchmarkpkg_kwargs = (
-                progressoptions = progressoptions,
                 script = script_wrapper,
             ),
         )
