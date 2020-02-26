@@ -4,6 +4,7 @@ import CpuId
 import JSON
 import LinearAlgebra
 import Markdown
+using Logging: ConsoleLogger
 using PkgBenchmark:
     BenchmarkConfig,
     BenchmarkJudgement,
@@ -103,7 +104,7 @@ function judge(
     pkgdir = pwd(),
     script = joinpath(pkgdir, "benchmark", "benchmarks.jl"),
     project = dirname(script),
-    progressoptions = is_in_ci() ? (dt = 60 * 9.0,) : NamedTuple(),
+    logger_factory = is_in_ci() ? ConsoleLogger : nothing,
 )
     target = BenchmarkConfig(target)
     if !(baseline isa BenchmarkConfig)
@@ -125,7 +126,7 @@ function judge(
             workspace = workspace,
             pkgdir = pkgdir,
             benchmarkpkg_kwargs = (
-                progressoptions = progressoptions,
+                logger_factory = logger_factory,
                 script = script_wrapper,
             ),
         )
