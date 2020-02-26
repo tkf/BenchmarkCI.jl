@@ -15,6 +15,10 @@ using PkgBenchmark:
     target_result
 using Setfield: @set
 
+if VERSION < v"1.2-"
+    mktempdir(f; _...) = Base.mktempdir(f)
+end
+
 include("runtimeinfo.jl")
 
 Base.@kwdef struct CIResult

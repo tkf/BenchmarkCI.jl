@@ -1,5 +1,6 @@
 import JSON
 using BenchmarkCI
+using BenchmarkCI: mktempdir
 using Test
 
 @testset "BenchmarkCI.jl" begin
