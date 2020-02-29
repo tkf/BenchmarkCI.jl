@@ -105,6 +105,18 @@ It is recommended to add following two lines in `.gitignore`:
 
 This is useful for running BenchmarkCI locally (see below).
 
+### Printing benchmark result (optional)
+
+Posting the benchmark result as a comment for every push for each PR
+may be too noisy.  In such case, using
+`BenchmarkCI.displayjudgement()` instead of `BenchmarkCI.postjudge()`
+may be useful.
+
+```yaml
+      - name: Print judgement
+        run: julia -e 'using BenchmarkCI; BenchmarkCI.displayjudgement()'
+```
+
 ## Running BenchmarkCI interactively
 
 ```
