@@ -20,11 +20,10 @@ BenchmarkCI.jl requires PkgBenchmark.jl to work.  See
 for more information.  BenchmarkCI.jl also requires a Julia project
 `benchmark/Project.toml` that is used for running the benchmark.
 
-### Setup with `benchmark/Manifest.toml`
+### Create a workflow file (required)
 
 Create (say) `.github/workflows/benchmark.yml` with the following
-configuration if `benchmark/Manifest.toml` is checked in to the
-project git repository:
+configuration:
 
 ```yaml
 name: Run benchmarks
@@ -50,8 +49,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-Note that `benchmark/Project.toml` must include parent project as
-well.  Run `dev ..` in `benchmark/` directory to add it:
+### Setup with `benchmark/Manifest.toml`
+
+If `benchmark/Manifest.toml` is checked into the repository,
+`benchmark/Project.toml` must include parent project as well.  Run
+`dev ..` in `benchmark/` directory to add it:
 
 ```
 shell> cd ~/.julia/dev/MyProject/
@@ -62,36 +64,6 @@ shell> cd benchmark/
 Activating environment at `~/.julia/dev/MyProject/benchmark/Project.toml`
 
 (benchmark) pkg> dev ..
-```
-
-### Setup without `benchmark/Manifest.toml`
-
-Create (say) `.github/workflows/benchmark.yml` with the following
-configuration if `benchmark/Manifest.toml` is _not_ checked in to the
-project git repository:
-
-```yaml
-name: Run benchmarks
-
-on:
-  pull_request:
-
-jobs:
-  Benchmark:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@latest
-        with:
-          version: 1.3
-      - name: Install dependencies
-        run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
-      - name: Run benchmarks
-        run: julia -e 'using BenchmarkCI; BenchmarkCI.judge()'
-      - name: Post results
-        run: julia -e 'using BenchmarkCI; BenchmarkCI.postjudge()'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Additional setup (recommended)
