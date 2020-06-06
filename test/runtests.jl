@@ -61,6 +61,12 @@ using Test
             seekstart(io)
             dict = JSON.parse(io)
             @test dict["body"] isa String
+
+            @testset "kwargs pass-through" begin
+                @info "Testing with `BenchmarkCI.judge(retune = true)`"
+                @test BenchmarkCI.judge(retune = true) isa Any
+                printlns(2)
+            end
         end
     end
 
