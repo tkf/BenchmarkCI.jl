@@ -115,6 +115,8 @@ Run `benchmarkpkg` on `target` and `baseline`.
   that defines the `SUITE` global variable/constant.
 - `project :: AbstractString = dirname(script)`: The project used to define
   and run benchmarks.
+- `postprocess`, `retune`, `verbose`, `logger_factory`: Passed to
+  `PkgBenchmark.benchmarkpkg`.
 """
 judge(; target = nothing, baseline = "origin/master", kwargs...) =
     judge(target, baseline; kwargs...)
@@ -127,6 +129,7 @@ function judge(
     script = joinpath(pkgdir, "benchmark", "benchmarks.jl"),
     project = dirname(script),
     logger_factory = is_in_ci() ? ConsoleLogger : nothing,
+    kwargs...,
 )
     target = BenchmarkConfig(target)
     if !(baseline isa BenchmarkConfig)
@@ -147,7 +150,8 @@ function judge(
             baseline = baseline,
             workspace = workspace,
             pkgdir = pkgdir,
-            benchmarkpkg_kwargs = (
+            benchmarkpkg_kwargs = (;
+                kwargs...,
                 logger_factory = logger_factory,
                 script = script_wrapper,
             ),
