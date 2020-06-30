@@ -447,18 +447,12 @@ function compress_tar(dest, src)
 end
 
 function decompress_tar(dest, src)
-    mkpath(dest)
-    zstdmt() do zstdmt_cmd
-        tar() do tar_cmd
-            proc = open(pipeline(`$zstdmt_cmd -d`; stdin = src); read = true)
-            try
-                run(pipeline(setenv(`$tar_cmd xf -`; dir = dest); stdin = proc))
-            finally
-                close(proc)
-                wait(proc)
-            end
-        end
+    proc = zstdmt() do cmd
+        open(pipeline(`$cmd -d`, stdin = src); read = true)
     end
+    Tar.extract(proc, dest)
+    close(proc)
+    wait(proc)
 end
 
 """
