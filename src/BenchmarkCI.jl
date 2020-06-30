@@ -477,7 +477,7 @@ function github_commit_info()
         @set commit_info.target_commit_sha = getnested(event, "pull_request", "head", "sha")
     end
 
-    @set commit_info.repo_url = getnested(even, "repository", "html_url")
+    @set commit_info.repo_url = getnested(event, "repository", "html_url")
 
     return commit_info
 end
