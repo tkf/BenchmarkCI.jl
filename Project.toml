@@ -14,7 +14,7 @@ Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
 PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
-Tar_jll = "9b64493d-8859-5bf3-93d7-7c32dd38186f"
+Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 Zstd_jll = "3161d3a3-bdf6-5164-811a-617609db77b4"
 
 [compat]
@@ -23,7 +23,7 @@ GitHub = "5"
 JSON = "0.21"
 PkgBenchmark = "0.2.8"
 Setfield = "0.1, 0.2, 0.3, 0.4, 0.5, 0.6"
-Tar_jll = "1"
+Tar = "1"
 Zstd_jll = "1"
 julia = "1"
 
