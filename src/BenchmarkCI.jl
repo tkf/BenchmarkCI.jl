@@ -386,7 +386,7 @@ function pushresult(;
         url = default_url
     end
     if sshkey === nothing
-        sshkey = base64decode(ENV["SSH_KEY"])
+        sshkey = String(base64decode(ENV["SSH_KEY"]))
     end
     judgement = _loadjudge(workspace)
     local datadir
