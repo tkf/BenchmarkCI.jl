@@ -413,7 +413,7 @@ function pushresult(;
             "context" => "benchmarkci/pushresult",
             "description" => "Benchmarks complete!",
             "target_url" =>
-                "https://github.com/$(repo.full_name)/bolb/$branch/src/$datadir/result.md",
+                "https://github.com/$(repo.full_name)/blob/$branch/$datadir/result.md",
         )
         @info "Creating status" sha params = status_params
         GitHub.create_status(repo, sha; auth = auth, params = status_params)
