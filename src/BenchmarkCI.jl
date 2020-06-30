@@ -17,7 +17,7 @@ using PkgBenchmark:
     baseline_result,
     export_markdown,
     target_result
-using Setfield: @set
+using Setfield: @set, @set!
 using UnPack: @unpack
 using Zstd_jll: zstdmt
 
@@ -472,12 +472,13 @@ function github_commit_info()
     event = JSON.parsefile(event_path)
 
     if get(ENV, "GITHUB_EVENT_NAME", nothing) == "pull_request"
-        @set commit_info.pull_request_url = getnested(event, "pull_request", "html_url")
-        @set commit_info.pull_request_title = getnested(event, "pull_request", "title")
-        @set commit_info.target_commit_sha = getnested(event, "pull_request", "head", "sha")
+        @set! commit_info.pull_request_url = getnested(event, "pull_request", "html_url")
+        @set! commit_info.pull_request_title = getnested(event, "pull_request", "title")
+        @set! commit_info.target_commit_sha =
+            getnested(event, "pull_request", "head", "sha")
     end
 
-    @set commit_info.repo_url = getnested(event, "repository", "html_url")
+    @set! commit_info.repo_url = getnested(event, "repository", "html_url")
 
     return commit_info
 end
