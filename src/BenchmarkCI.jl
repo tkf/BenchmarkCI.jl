@@ -378,6 +378,7 @@ function pushresult(;
     default_url = nothing
     repo = nothing
     if haskey(ENV, "GITHUB_TOKEN")
+        sha = ENV["GITHUB_SHA"]
         auth = GitHub.authenticate(ENV["GITHUB_TOKEN"])
         repo = GitHub.repo(ENV["GITHUB_REPOSITORY"]; auth = auth)
         default_url = "git@github.com:$(repo.full_name).git"
