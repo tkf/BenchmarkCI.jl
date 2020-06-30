@@ -29,9 +29,13 @@ function updating(
 
         try
             run(git(`clone --branch=$branch --depth=1 $url $repodir`))
+            cd(repodir) do
+                setup_git_user()
+            end
         catch
             run(git(`init $repodir`))
             cd(repodir) do
+                setup_git_user()
                 run(git(`checkout -b $branch`))
                 run(git(`commit --allow-empty --allow-empty-message --message=""`))
                 run(git(`push origin $branch`))
@@ -69,8 +73,9 @@ end
 function setup_git_user()
     GITHUB_ACTOR = get(ENV, "GITHUB_ACTOR", nothing)
     GITHUB_ACTOR === nothing && return
-    run(`git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"`)
-    run(`git config --global user.name $GITHUB_ACTOR`)
+    # WARNING: This function is run via tests. Do NOT use `--global`.
+    run(`git config user.email "$GITHUB_ACTOR@users.noreply.github.com"`)
+    run(`git config user.name $GITHUB_ACTOR`)
 end
 
 end  # module
