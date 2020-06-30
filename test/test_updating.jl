@@ -15,7 +15,7 @@ function init_random_repo(dir, branch)
     end
 end
 
-@testset begin
+@testset "updating" begin
     mktempdir() do dir
         branch = "somebranch"
         origin = joinpath(dir, "origin")
@@ -39,6 +39,12 @@ end
             @test read("spam.txt", String) == "hello hello"
             run(`git checkout -`)
         end
+    end
+end
+
+@testset "prepare_ssh_command" begin
+    mktempdir() do dir
+        @test occursin(dir, GitUtils.prepare_ssh_command(dir, "dummy key"))
     end
 end
 

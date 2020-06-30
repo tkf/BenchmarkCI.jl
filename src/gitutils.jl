@@ -56,12 +56,14 @@ end
 
 function prepare_ssh_command(sshdir::AbstractString, sshkey::AbstractString)
     mkpath(sshdir)
-    chmod(sshdir, 700, sshdir)
+    chmod(sshdir, 0o700)
 
     keyfile = joinpath(sshdir, "key")
     write(keyfile, "")
-    chmod(keyfile, 600)
+    chmod(keyfile, 0o600)
     write(keyfile, sshkey)
+
+    return "ssh -i $keyfile"
 end
 
 function setup_git_user()
