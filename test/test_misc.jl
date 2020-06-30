@@ -21,14 +21,18 @@ end
 
 @testset "compress_tar" begin
     mktempdir() do dir
-        src = joinpath(dir, "src")
-        mkdir(src)
-        write(joinpath(src, "README.md"), "hello")
+        srcdir = joinpath(dir, "src")
+        mkdir(srcdir)
+        write(joinpath(srcdir, "README.md"), "hello")
 
-        dest = joinpath(dir, "dest.tar.zst")
-        BenchmarkCI.compress_tar(dest, src)
+        tarfile = joinpath(dir, "dest.tar.zst")
+        BenchmarkCI.compress_tar(tarfile, srcdir)
 
-        @test isfile(dest)
+        @test isfile(tarfile)
+
+        destdir = joinpath(dir, "dest")
+        BenchmarkCI.decompress_tar(destdir, tarfile)
+        @test read(joinpath(destdir, "README.md"), String) == "hello"
     end
 end
 

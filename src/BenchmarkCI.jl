@@ -442,7 +442,22 @@ function compress_tar(dest, src)
         tar() do tar_cmd
             proc = open(`$zstdmt_cmd -f - -o $dest`; write = true)
             try
-                run(pipeline(`tar cf - $src`; stdout = proc))
+                run(pipeline(setenv(`$tar_cmd cf - .`; dir = src); stdout = proc))
+            finally
+                close(proc)
+                wait(proc)
+            end
+        end
+    end
+end
+
+function decompress_tar(dest, src)
+    mkpath(dest)
+    zstdmt() do zstdmt_cmd
+        tar() do tar_cmd
+            proc = open(pipeline(`$zstdmt_cmd -d`; stdin = src); read = true)
+            try
+                run(pipeline(setenv(`$tar_cmd xf -`; dir = dest); stdin = proc))
             finally
                 close(proc)
                 wait(proc)
