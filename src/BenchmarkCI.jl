@@ -6,6 +6,7 @@ import JSON
 import LinearAlgebra
 import Markdown
 import Tar
+using Base64: base64decode
 using Logging: ConsoleLogger
 using PkgBenchmark:
     BenchmarkConfig,
