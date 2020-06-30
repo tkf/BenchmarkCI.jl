@@ -17,7 +17,8 @@ using PkgBenchmark:
     baseline_result,
     export_markdown,
     target_result
-using Setfield: @set
+using Setfield: @set, @set!
+using UnPack: @unpack
 using Zstd_jll: zstdmt
 
 if VERSION < v"1.2-"
@@ -33,6 +34,14 @@ Base.@kwdef struct CIResult
 end
 
 const DEFAULT_WORKSPACE = ".benchmarkci"
+
+function getnested(d, keys...)
+    for k in keys
+        d = get(d, k, nothing)
+        d === nothing && return nothing
+    end
+    return d
+end
 
 is_in_ci(ENV = ENV) =
     lowercase(get(ENV, "CI", "false")) == "true" || haskey(ENV, "GITHUB_EVENT_PATH")
@@ -377,6 +386,7 @@ function pushresult(;
     workspace = abspath(workspace)
     default_url = nothing
     repo = nothing
+    commit_info = github_commit_info()
     if haskey(ENV, "GITHUB_TOKEN")
         sha = github_sha()
         auth = GitHub.authenticate(ENV["GITHUB_TOKEN"])
@@ -391,6 +401,11 @@ function pushresult(;
         sshkey = String(base64decode(ENV["SSH_KEY"]))
     end
     judgement = _loadjudge(workspace)
+    if commit_info !== nothing
+        open(joinpath(workspace, "commit_info.json"); write = true) do io
+            JSON.print(io, commit_info)
+        end
+    end
     local datadir
     GitUtils.updating(
         url,
@@ -403,6 +418,8 @@ function pushresult(;
         compress_tar(joinpath(datadir, "result.tar.zst"), workspace)
         open(joinpath(datadir, "result.md"); write = true) do io
             println(io, "# ", title)
+            println(io)
+            printinfomd(io, commit_info)
             println(io)
             printresultmd(io, CIResult(title = title, judgement = judgement))
         end
@@ -434,6 +451,52 @@ function github_sha()
         end
     elseif get(ENV, "GITHUB_EVENT_NAME", nothing) == "push"
         return ENV["GITHUB_SHA"]
+    end
+end
+
+struct GitHubCommitInfo
+    repo_url::Union{Nothing,String}
+    target_commit_sha::Union{Nothing,String}
+    pull_request_url::Union{Nothing,String}
+    pull_request_title::Union{Nothing,String}
+end
+
+GitHubCommitInfo() =
+    GitHubCommitInfo(nothing, nothing, nothing, nothing)
+
+function github_commit_info()
+    commit_info::GitHubCommitInfo = GitHubCommitInfo()
+
+    event_path = get(ENV, "GITHUB_EVENT_PATH", nothing)
+    event_path === nothing && return commit_info
+    event = JSON.parsefile(event_path)
+
+    if get(ENV, "GITHUB_EVENT_NAME", nothing) == "pull_request"
+        @set! commit_info.pull_request_url = getnested(event, "pull_request", "html_url")
+        @set! commit_info.pull_request_title = getnested(event, "pull_request", "title")
+        @set! commit_info.target_commit_sha =
+            getnested(event, "pull_request", "head", "sha")
+    end
+
+    @set! commit_info.repo_url = getnested(event, "repository", "html_url")
+
+    return commit_info
+end
+
+function printinfomd(io, commit_info::GitHubCommitInfo)
+    @unpack repo_url, target_commit_sha, pull_request_url, pull_request_title = commit_info
+    if repo_url !== nothing && target_commit_sha !== nothing
+        target_commit_url = "$repo_url/commit/$target_commit_sha"
+    end
+    if target_commit_url !== nothing
+        println(io, "* Target commit: [`$target_commit_sha`]($target_commit_url)")
+    end
+    if pull_request_url !== nothing
+        print(io, "* Pull request: <$pull_request_url>")
+        if pull_request_title !== nothing
+            print(io, " ($pull_request_title)")
+        end
+        println(io)
     end
 end
 
