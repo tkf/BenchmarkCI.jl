@@ -19,4 +19,15 @@ end
     @test occursin("`GITHUB_TOKEN` is not set", sprint(showerror, err))
 end
 
+@testset "compress_tar" begin
+    mktempdir() do dir
+        src = joinpath(dir, "src")
+        mkdir(src)
+        write(joinpath(src, "README.md"), "hello")
+
+        dest = joinpath(dir, "dest.tar.zst")
+        BenchmarkCI.compress_tar(dest, src)
+    end
+end
+
 end  # module
