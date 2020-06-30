@@ -36,6 +36,7 @@ function updating(
             run(git(`init $repodir`))
             cd(repodir) do
                 setup_git_user()
+                run(git(`remote add origin $url`))
                 run(git(`checkout -b $branch`))
                 run(git(`commit --allow-empty --allow-empty-message --message=""`))
                 run(git(`push origin $branch`))
