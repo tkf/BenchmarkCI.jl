@@ -26,3 +26,4 @@ jobs:
         run: julia -e "using BenchmarkCI; BenchmarkCI.pushresult()"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
