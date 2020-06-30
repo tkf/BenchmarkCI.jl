@@ -378,7 +378,7 @@ function pushresult(;
     default_url = nothing
     repo = nothing
     if haskey(ENV, "GITHUB_TOKEN")
-        sha = ENV["GITHUB_SHA"]
+        sha = github_sha()
         auth = GitHub.authenticate(ENV["GITHUB_TOKEN"])
         repo = GitHub.repo(ENV["GITHUB_REPOSITORY"]; auth = auth)
         default_url = "git@github.com:$(repo.full_name).git"
@@ -419,6 +419,22 @@ function pushresult(;
         GitHub.create_status(repo, sha; auth = auth, params = status_params)
     end
     return
+end
+
+# From `post_status` in Documenter.jl
+function github_sha()
+    if get(ENV, "GITHUB_EVENT_NAME", nothing) == "pull_request"
+        event_path = get(ENV, "GITHUB_EVENT_PATH", nothing)
+        event_path === nothing && return
+        event = JSON.parsefile(event_path)
+        if haskey(event, "pull_request") &&
+            haskey(event["pull_request"], "head") &&
+            haskey(event["pull_request"]["head"], "sha")
+            return event["pull_request"]["head"]["sha"]
+        end
+    elseif get(ENV, "GITHUB_EVENT_NAME", nothing) == "push"
+        return ENV["GITHUB_SHA"]
+    end
 end
 
 function compress_tar(dest, src)
