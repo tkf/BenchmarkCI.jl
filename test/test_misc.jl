@@ -27,6 +27,8 @@ end
 
         dest = joinpath(dir, "dest.tar.zst")
         BenchmarkCI.compress_tar(dest, src)
+
+        @test isfile(dest)
     end
 end
 
