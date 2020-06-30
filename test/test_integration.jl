@@ -6,9 +6,6 @@ using BenchmarkCI: mktempdir
 using Test
 
 @testset "BenchmarkCI.jl" begin
-    @test BenchmarkCI.format_period(3) == "3 seconds"
-    @test BenchmarkCI.format_period(125) == "2 minutes 5 seconds"
-
     function flushall()
         flush(stderr)
         flush(stdout)
@@ -71,15 +68,6 @@ using Test
             end
         end
     end
-
-    err = nothing
-    @test try
-        BenchmarkCI.error_on_missing_github_token()
-        false
-    catch err
-        true
-    end
-    @test occursin("`GITHUB_TOKEN` is not set", sprint(showerror, err))
 end
 
 end  # module
