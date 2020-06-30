@@ -7,6 +7,10 @@ function init_random_repo(dir, branch)
     mkpath(dir)
     cd(dir) do
         run(`git init .`)
+
+        run(`git config user.email "DUMMY@users.noreply.github.com"`)
+        run(`git config user.name DUMMY`)
+
         run(`git checkout -b $branch`)
         write("README.txt", "hello")
         run(`git add .`)
