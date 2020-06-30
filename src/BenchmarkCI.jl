@@ -6,7 +6,6 @@ import GitHub
 import JSON
 import LinearAlgebra
 import Markdown
-import Tar
 using Base64: base64decode
 using Logging: ConsoleLogger
 using PkgBenchmark:
@@ -18,6 +17,7 @@ using PkgBenchmark:
     export_markdown,
     target_result
 using Setfield: @set
+using Tar_jll: tar
 using Zstd_jll: zstdmt
 
 if VERSION < v"1.2-"
@@ -422,12 +422,17 @@ function pushresult(;
 end
 
 function compress_tar(dest, src)
-    proc = zstdmt() do cmd
-        open(`$cmd -f - -o $dest`; write = true)
+    zstdmt() do zstdmt_cmd
+        tar() do tar_cmd
+            proc = open(`$zstdmt_cmd -f - -o $dest`; write = true)
+            try
+                run(pipeline(`tar cf - $src`; stdout = proc))
+            finally
+                close(proc)
+                wait(proc)
+            end
+        end
     end
-    Tar.create(src, proc)
-    close(proc)
-    wait(proc)
 end
 
 """
