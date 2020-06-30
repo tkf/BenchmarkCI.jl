@@ -1,9 +1,11 @@
 module BenchmarkCI
 
 import CpuId
+import GitHub
 import JSON
 import LinearAlgebra
 import Markdown
+import Tar
 using Logging: ConsoleLogger
 using PkgBenchmark:
     BenchmarkConfig,
@@ -14,12 +16,14 @@ using PkgBenchmark:
     export_markdown,
     target_result
 using Setfield: @set
+using Zstd_jll: zstdmt
 
 if VERSION < v"1.2-"
     mktempdir(f; _...) = Base.mktempdir(f)
 end
 
 include("runtimeinfo.jl")
+include("gitutils.jl")
 
 Base.@kwdef struct CIResult
     judgement::BenchmarkJudgement
@@ -30,6 +34,14 @@ const DEFAULT_WORKSPACE = ".benchmarkci"
 
 is_in_ci(ENV = ENV) =
     lowercase(get(ENV, "CI", "false")) == "true" || haskey(ENV, "GITHUB_EVENT_PATH")
+
+function find_manifest(project)
+    dir = isdir(project) ? project : dirname(project)
+    candidates = joinpath.(dir, ("JuliaManifest.toml", "Manifest.toml"))
+    i = findfirst(isfile, candidates)
+    i === nothing && return nothing
+    return candidates[i]
+end
 
 function generate_script(default_script, project, should_resolve)
     default_script = abspath(default_script)
@@ -60,15 +72,14 @@ end
 
 function maybe_with_merged_project(f, project, pkgdir)
     project = abspath(project)
-    dir = endswith(project, ".toml") ? dirname(project) : project
-    if any(isfile.(joinpath.(dir, ("JuliaManifest.toml", "Manifest.toml"))))
+    if find_manifest(project) !== nothing
         @info "Using existing manifest file."
         return f(project, false)  # should_resolve = false
     else
         if isfile(project)
             file = project
         else
-            candidates = joinpath.(dir, ("JuliaProject.toml", "Project.toml"))
+            candidates = joinpath.(project, ("JuliaProject.toml", "Project.toml"))
             i = findfirst(isfile, candidates)
             if i === nothing
                 error("One of the following files must exist:\n", join(candidates, "\n"))
@@ -143,7 +154,22 @@ function judge(
     mkpath(workspace)
     script_wrapper = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
 
+    let metadata = Dict(
+            :target => target,
+            :baseline => baseline,
+            :pkgdir => pkgdir,
+            :script => script,
+            :project => project,
+        )
+        open(joinpath(workspace, "metadata.json"); write = true) do io
+            JSON.print(io, metadata)
+        end
+    end
+
     maybe_with_merged_project(project, pkgdir) do tmpproject, should_resolve
+        cp(tmpproject, joinpath(workspace, "Project.toml"); force = true)
+        tmpmanifest = something(find_manifest(tmpproject))
+        cp(tmpmanifest , joinpath(workspace, "Manifest.toml"); force = true)
         write(script_wrapper, generate_script(script, tmpproject, should_resolve))
         _judge(;
             target = target,
@@ -323,6 +349,81 @@ function post_judge_github(event_path, ciresult)
     end
     @debug "Response from GitHub" Text(response)
     @info "Comment posted."
+end
+
+"""
+    pushresult(; url, branch, sshkey, title)
+
+Push benchmark result to `branch` in `url`.
+
+# Keyword Arguments
+- `url::Union{AbstractString,Nothing} = nothing`: Repository URL.
+- `branch::AbstractString = "benchmark-results"`: Branch where the
+  results are pushed.
+- `sshkey::Union{AbstractString,Nothing} = nothing`: Documenter.jl-style
+  SSH private key (base64-encoded private key).
+- `title::AbstractString = "Benchmark result"`: The title to be used in
+  benchmark report.
+"""
+function pushresult(;
+    url::Union{AbstractString,Nothing} = nothing,
+    branch::AbstractString = "benchmark-results",
+    sshkey::Union{AbstractString,Nothing} = nothing,
+    workspace::AbstractString = DEFAULT_WORKSPACE,
+    title::AbstractString = "Benchmark result",
+)
+    workspace = abspath(workspace)
+    default_url = nothing
+    repo = nothing
+    if haskey(ENV, "GITHUB_TOKEN")
+        auth = GitHub.authenticate(ENV["GITHUB_TOKEN"])
+        repo = GitHub.repo(ENV["GITHUB_REPOSITORY"]; auth = auth)
+        default_url = "git@github.com:$(repo.full_name).git"
+    end
+    if url === nothing
+        default_url === nothing && error("cannot auto detect url")
+        url = default_url
+    end
+    if sshkey === nothing
+        sshkey = base64decode(ENV["SSH_KEY"])
+    end
+    judgement = _loadjudge(workspace)
+    local datadir
+    GitUtils.updating(
+        url,
+        branch;
+        sshkey = sshkey,
+        commit_message = "Add: $title",
+    ) do ctx
+        datadir = Dates.format(Dates.now(), joinpath("yyyy", "mm", "dd", "HHMMSS"))
+        mkpath(datadir)
+        compress_tar(joinpath(datadir, "result.tar.zst"), workspace)
+        write(joinpath(datadir, "result.md")) do io
+            println(io, "# ", title)
+            println(io)
+            printresultmd(io, CIResult(title = title, judgement = judgement))
+        end
+    end
+    if repo !== nothing
+        status_params = Dict(
+            "state" => "success",
+            "context" => "benchmarkci/pushresult",
+            "description" => "Benchmarks complete!",
+            "target_url" =>
+                "https://github.com/$(repo.full_name)/bolb/$branch/src/$datadir/result.md",
+        )
+        GitHub.create_status(repo, sha; auth = auth, params = status_params)
+    end
+    return
+end
+
+function compress_tar(dest, src)
+    proc = zstdmt() do cmd
+        open(`$cmd -f - -o $dest`; write = true)
+    end
+    Tar.create(src, proc)
+    close(proc)
+    wait(proc)
 end
 
 """
