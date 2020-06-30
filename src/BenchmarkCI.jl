@@ -410,7 +410,7 @@ function pushresult(;
     if repo !== nothing
         status_params = Dict(
             "state" => "success",
-            "context" => "benchmarkci/pushresult",
+            "context" => "benchmarkci/$title",
             "description" => "Benchmarks complete!",
             "target_url" =>
                 "https://github.com/$(repo.full_name)/blob/$branch/$datadir/result.md",
