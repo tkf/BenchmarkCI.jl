@@ -1,3 +1,5 @@
+module TestIntegration
+
 import JSON
 using BenchmarkCI
 using BenchmarkCI: mktempdir
@@ -79,3 +81,5 @@ using Test
     end
     @test occursin("`GITHUB_TOKEN` is not set", sprint(showerror, err))
 end
+
+end  # module
