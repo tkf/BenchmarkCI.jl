@@ -489,10 +489,10 @@ function printinfomd(io, commit_info::GitHubCommitInfo)
         target_commit_url = "$repo_url/commit/$target_commit_sha"
     end
     if target_commit_url !== nothing
-        println(io, "* [`$target_commit_sha`]($target_commit_url)")
+        println(io, "* Target commit: [`$target_commit_sha`]($target_commit_url)")
     end
     if pull_request_url !== nothing
-        print(io, "* <$pull_request_url>")
+        print(io, "* Pull request: <$pull_request_url>")
         if pull_request_title !== nothing
             print(io, " ($pull_request_title)")
         end
