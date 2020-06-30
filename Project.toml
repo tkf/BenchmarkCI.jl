@@ -25,6 +25,7 @@ JSON = "0.21"
 PkgBenchmark = "0.2.8"
 Setfield = "0.1, 0.2, 0.3, 0.4, 0.5, 0.6"
 Tar = "1"
+UnPack = "1"
 Zstd_jll = "1"
 julia = "1"
 
