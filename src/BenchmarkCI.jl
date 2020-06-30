@@ -1,6 +1,7 @@
 module BenchmarkCI
 
 import CpuId
+import Dates
 import GitHub
 import JSON
 import LinearAlgebra
