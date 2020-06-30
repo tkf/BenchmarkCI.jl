@@ -400,7 +400,7 @@ function pushresult(;
         datadir = Dates.format(Dates.now(), joinpath("yyyy", "mm", "dd", "HHMMSS"))
         mkpath(datadir)
         compress_tar(joinpath(datadir, "result.tar.zst"), workspace)
-        write(joinpath(datadir, "result.md")) do io
+        open(joinpath(datadir, "result.md")) do io
             println(io, "# ", title)
             println(io)
             printresultmd(io, CIResult(title = title, judgement = judgement))
