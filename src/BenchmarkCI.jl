@@ -11,6 +11,7 @@ import Pkg
 import Tar
 using Base64: base64decode
 using Logging: ConsoleLogger
+using Pkg: TOML
 using PkgBenchmark:
     BenchmarkConfig,
     BenchmarkJudgement,
@@ -29,6 +30,11 @@ end
 
 include("runtimeinfo.jl")
 include("gitutils.jl")
+
+const BENCHMARK_CI_VERSION = let
+    proj = TOML.parsefile(joinpath((@__DIR__), "..", "Project.toml"))
+    VersionNumber(proj["version"])
+end
 
 versionof(pkg::Module) = versionof(Base.PkgId(pkg))
 if isdefined(Pkg, :dependencies)
@@ -78,7 +84,7 @@ end
 function benchmarkci_info()
     return Dict(
         :versions => Dict(
-            :BenchmarkCI => string(@versionof(BenchmarkCI)),
+            :BenchmarkCI => string(BENCHMARK_CI_VERSION),
             :PkgBenchmark => string(@versionof(PkgBenchmark)),
             :BenchmarkTools => string(@versionof(BenchmarkTools)),
         ),
