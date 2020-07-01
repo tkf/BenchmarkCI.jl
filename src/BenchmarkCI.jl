@@ -62,6 +62,17 @@ function getnested(d, keys...)
     return d
 end
 
+function setnested!(d0, v, keys...)
+    d = d0
+    for k in keys[1:end-1]
+        d = get!(d, k, empty(d0))
+    end
+    d[keys[end]] = v
+    return d
+end
+
+mirrornested!(dest, src, keys...) = setnested!(dest, getnested(src, keys...), keys...)
+
 is_in_ci(ENV = ENV) =
     lowercase(get(ENV, "CI", "false")) == "true" || haskey(ENV, "GITHUB_EVENT_PATH")
 
@@ -508,13 +519,10 @@ end
 
 struct GitHubCommitInfo
     repo_url::Union{Nothing,String}
-    pull_request_commit_sha::Union{Nothing,String}
-    pull_request_url::Union{Nothing,String}
-    pull_request_title::Union{Nothing,String}
+    pull_request::Dict{String,Any}
 end
 
-GitHubCommitInfo() =
-    GitHubCommitInfo(nothing, nothing, nothing, nothing)
+GitHubCommitInfo() = GitHubCommitInfo(nothing, Dict{String,Any}())
 
 function github_commit_info()
     commit_info::GitHubCommitInfo = GitHubCommitInfo()
@@ -523,11 +531,22 @@ function github_commit_info()
     event_path === nothing && return commit_info
     event = JSON.parsefile(event_path)
 
+    # https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request
     if get(ENV, "GITHUB_EVENT_NAME", nothing) == "pull_request"
-        @set! commit_info.pull_request_url = getnested(event, "pull_request", "html_url")
-        @set! commit_info.pull_request_title = getnested(event, "pull_request", "title")
-        @set! commit_info.pull_request_commit_sha =
-            getnested(event, "pull_request", "head", "sha")
+        if (pull_request = get(event, "pull_request", nothing)) !== nothing
+            for keys in Tuple[
+                ("html_url",),
+                ("title",),
+                ("user", "login"),
+                ("head", "sha"),
+                ("head", "ref"),
+                ("head", "repo", "html_url"),
+                ("base", "sha"),
+                ("base", "ref"),
+            ]
+                mirrornested!(commit_info.pull_request, pull_request, keys...)
+            end
+        end
     end
 
     @set! commit_info.repo_url = getnested(event, "repository", "html_url")
@@ -536,11 +555,16 @@ function github_commit_info()
 end
 
 function printinfomd(io, commit_info::GitHubCommitInfo)
-    @unpack repo_url, pull_request_commit_sha, pull_request_url, pull_request_title =
-        commit_info
+    @unpack repo_url, pull_request = commit_info
+    pull_request_url = getnested(pull_request, "html_url")
+    pull_request_title = getnested(pull_request, "title")
+    pull_request_commit_sha = getnested(pull_request, "head", "sha")
+    target_commit_url = nothing
+
     if repo_url !== nothing && pull_request_commit_sha !== nothing
         target_commit_url = "$repo_url/commit/$pull_request_commit_sha"
     end
+
     if target_commit_url !== nothing
         println(
             io,
