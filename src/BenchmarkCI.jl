@@ -1,11 +1,13 @@
 module BenchmarkCI
 
+import BenchmarkTools
 import CpuId
 import Dates
 import GitHub
 import JSON
 import LinearAlgebra
 import Markdown
+import Pkg
 import Tar
 using Base64: base64decode
 using Logging: ConsoleLogger
@@ -27,6 +29,17 @@ end
 
 include("runtimeinfo.jl")
 include("gitutils.jl")
+
+versionof(pkg::Module) = versionof(Base.PkgId(pkg))
+if isdefined(Pkg, :dependencies)
+    versionof(pkg::Base.PkgId) = Pkg.dependencies()[pkg.uuid].version
+else
+    versionof(pkg::Base.PkgId) = Pkg.installed()[pkg.name]
+end
+
+macro versionof(pkg::Symbol)
+    QuoteNode(versionof(getproperty(__module__, pkg)))
+end
 
 Base.@kwdef struct CIResult
     judgement::BenchmarkJudgement
@@ -60,6 +73,16 @@ function find_manifest_toml(project)
     i = findfirst(isfile, candidates)
     i === nothing && return nothing
     return candidates[i]
+end
+
+function benchmarkci_info()
+    return Dict(
+        :versions => Dict(
+            :BenchmarkCI => string(@versionof(BenchmarkCI)),
+            :PkgBenchmark => string(@versionof(PkgBenchmark)),
+            :BenchmarkTools => string(@versionof(BenchmarkTools)),
+        ),
+    )
 end
 
 function generate_script(default_script, project, should_resolve)
@@ -179,10 +202,19 @@ function judge(
             :pkgdir => pkgdir,
             :script => script,
             :project => project,
+            :BenchmarkCI => benchmarkci_info(),
         )
         open(joinpath(workspace, "metadata.json"); write = true) do io
             JSON.print(io, metadata)
         end
+    end
+    let env = Base.active_project(),
+        projecttoml = find_project_toml(env),
+        manifesttoml = find_manifest_toml(env),
+        dest = joinpath(workspace, "runnerenv")
+        mkpath(dest)
+        cp(projecttoml, joinpath(dest, "Project.toml"); force = true)
+        cp(manifesttoml , joinpath(dest, "Manifest.toml"); force = true)
     end
 
     maybe_with_merged_project(project, pkgdir) do tmpproject, should_resolve
@@ -244,6 +276,11 @@ function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
         * Target: $(format_period(time_target))
         * Baseline: $(format_period(time_baseline))
         """
+        let runinfo = Dict(:time_target => time_target, :time_baseline => time_baseline)
+            open(joinpath(workspace, "runinfo.json"); write = true) do io
+                JSON.print(io, runinfo)
+            end
+        end
         judgement = PkgBenchmark.judge(group_target, group_baseline)
         if is_in_ci()
             display(judgement)
@@ -465,7 +502,7 @@ end
 
 struct GitHubCommitInfo
     repo_url::Union{Nothing,String}
-    target_commit_sha::Union{Nothing,String}
+    pull_request_commit_sha::Union{Nothing,String}
     pull_request_url::Union{Nothing,String}
     pull_request_title::Union{Nothing,String}
 end
@@ -483,7 +520,7 @@ function github_commit_info()
     if get(ENV, "GITHUB_EVENT_NAME", nothing) == "pull_request"
         @set! commit_info.pull_request_url = getnested(event, "pull_request", "html_url")
         @set! commit_info.pull_request_title = getnested(event, "pull_request", "title")
-        @set! commit_info.target_commit_sha =
+        @set! commit_info.pull_request_commit_sha =
             getnested(event, "pull_request", "head", "sha")
     end
 
@@ -493,12 +530,17 @@ function github_commit_info()
 end
 
 function printinfomd(io, commit_info::GitHubCommitInfo)
-    @unpack repo_url, target_commit_sha, pull_request_url, pull_request_title = commit_info
-    if repo_url !== nothing && target_commit_sha !== nothing
-        target_commit_url = "$repo_url/commit/$target_commit_sha"
+    @unpack repo_url, pull_request_commit_sha, pull_request_url, pull_request_title =
+        commit_info
+    if repo_url !== nothing && pull_request_commit_sha !== nothing
+        target_commit_url = "$repo_url/commit/$pull_request_commit_sha"
     end
     if target_commit_url !== nothing
-        println(io, "* Target commit: [`$target_commit_sha`]($target_commit_url)")
+        println(
+            io,
+            "* Pull request commit:",
+            " [`$pull_request_commit_sha`]($target_commit_url)",
+        )
     end
     if pull_request_url !== nothing
         print(io, "* Pull request: <$pull_request_url>")

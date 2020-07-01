@@ -2,12 +2,18 @@ module TestIntegration
 
 import JSON
 using BenchmarkCI
-using BenchmarkCI: mktempdir
+using BenchmarkCI: mktempdir, versionof
 using Test
 
 function check_workspace(workspace = BenchmarkCI.DEFAULT_WORKSPACE)
     @test isfile(joinpath(workspace, "Project.toml"))
     @test isfile(joinpath(workspace, "Manifest.toml"))
+    metadata = JSON.parsefile(joinpath(workspace, "metadata.json"))
+    runinfo = JSON.parsefile(joinpath(workspace, "runinfo.json"))
+    @test metadata["BenchmarkCI"]["versions"]["BenchmarkCI"] ==
+          string(versionof(BenchmarkCI))
+    @test runinfo["time_target"]::Real > 0
+    @test runinfo["time_baseline"]::Real > 0
 end
 
 @testset "BenchmarkCI.jl" begin
