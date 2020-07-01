@@ -119,6 +119,22 @@ may be useful.
         run: julia -e 'using BenchmarkCI; BenchmarkCI.displayjudgement()'
 ```
 
+### Store benchmark result in a Git branch (optional; _very_ experimental)
+
+Alternatively, the benchmark result and report markdown can be pushed
+to a git branch `benchmark-results`
+([example](https://github.com/tkf/BenchmarkCI.jl/tree/benchmark-results)).
+
+```yaml
+      - name: Push results
+        run: julia -e "using BenchmarkCI; BenchmarkCI.pushresult()"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SSH_KEY: ${{ secrets.DOCUMENTER_KEY }}
+```
+
+**WARNING**: Storage format may be changed across releases.
+
 ## Running BenchmarkCI interactively
 
 ```
