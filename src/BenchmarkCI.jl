@@ -46,7 +46,15 @@ end
 is_in_ci(ENV = ENV) =
     lowercase(get(ENV, "CI", "false")) == "true" || haskey(ENV, "GITHUB_EVENT_PATH")
 
-function find_manifest(project)
+function find_project_toml(project)
+    dir = isdir(project) ? project : dirname(project)
+    candidates = joinpath.(dir, ("JuliaProject.toml", "Project.toml"))
+    i = findfirst(isfile, candidates)
+    i === nothing && return nothing
+    return candidates[i]
+end
+
+function find_manifest_toml(project)
     dir = isdir(project) ? project : dirname(project)
     candidates = joinpath.(dir, ("JuliaManifest.toml", "Manifest.toml"))
     i = findfirst(isfile, candidates)
@@ -83,7 +91,7 @@ end
 
 function maybe_with_merged_project(f, project, pkgdir)
     project = abspath(project)
-    if find_manifest(project) !== nothing
+    if find_manifest_toml(project) !== nothing
         @info "Using existing manifest file."
         return f(project, false)  # should_resolve = false
     else
@@ -178,8 +186,9 @@ function judge(
     end
 
     maybe_with_merged_project(project, pkgdir) do tmpproject, should_resolve
-        cp(tmpproject, joinpath(workspace, "Project.toml"); force = true)
-        tmpmanifest = something(find_manifest(tmpproject))
+        tmpprojecttoml = find_project_toml(tmpproject)
+        cp(tmpprojecttoml, joinpath(workspace, "Project.toml"); force = true)
+        tmpmanifest = something(find_manifest_toml(tmpproject))
         cp(tmpmanifest , joinpath(workspace, "Manifest.toml"); force = true)
         write(script_wrapper, generate_script(script, tmpproject, should_resolve))
         _judge(;
