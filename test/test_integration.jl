@@ -5,6 +5,11 @@ using BenchmarkCI
 using BenchmarkCI: mktempdir
 using Test
 
+function check_workspace(workspace = BenchmarkCI.DEFAULT_WORKSPACE)
+    @test isfile(joinpath(workspace, "Project.toml"))
+    @test isfile(joinpath(workspace, "Manifest.toml"))
+end
+
 @testset "BenchmarkCI.jl" begin
     function flushall()
         flush(stderr)
@@ -34,8 +39,14 @@ using Test
                     run(`git checkout $target`)
                     run(`git clean --force -xd`)
                     withenv("CI" => "true", "GITHUB_EVENT_PATH" => nothing) do
-                        BenchmarkCI.runall()
-                        BenchmarkCI.runall(project = "benchmark/Project.toml")
+                        @testset "default" begin
+                            BenchmarkCI.runall()
+                            check_workspace()
+                        end
+                        @testset "project = benchmark/Project.toml" begin
+                            BenchmarkCI.runall(project = "benchmark/Project.toml")
+                            check_workspace()
+                        end
                     end
                 end
             end
