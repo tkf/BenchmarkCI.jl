@@ -274,8 +274,9 @@ end
 
 function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
 
-    target_git_tree_sha1 = read(`git rev-parse $(target.id):`, String)
-    baseline_git_tree_sha1 = read(`git rev-parse $(baseline.id):`, String)
+    target_git_tree_sha1 = read(`git rev-parse $(something(target.id, "HEAD")):`, String)
+    baseline_git_tree_sha1 =
+        read(`git rev-parse $(something(baseline.id, "HEAD")):`, String)
     noisily() do
         time_target = @elapsed group_target = PkgBenchmark.benchmarkpkg(
             pkgdir,
