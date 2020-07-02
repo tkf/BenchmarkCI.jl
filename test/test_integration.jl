@@ -12,7 +12,7 @@ function check_workspace(workspace = BenchmarkCI.DEFAULT_WORKSPACE)
     runinfo = JSON.parsefile(joinpath(workspace, "runinfo.json"))
     @test metadata["BenchmarkCI"]["versions"]["BenchmarkCI"] ==
           string(versionof(BenchmarkCI))
-    @test metadata["format_version"]::Int < 0
+    @test metadata["BenchmarkCI"]["format_version"]::Int < 0
     @test runinfo["time_target"]::Real > 0
     @test runinfo["time_baseline"]::Real > 0
     @test length(runinfo["target_git_tree_sha1"]::AbstractString) == 40
