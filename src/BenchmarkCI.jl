@@ -99,6 +99,7 @@ function benchmarkci_info()
             :PkgBenchmark => string(@versionof(PkgBenchmark)),
             :BenchmarkTools => string(@versionof(BenchmarkTools)),
         ),
+        :format_version => typemin(Int) ÷ 2 + 0,
     )
 end
 
