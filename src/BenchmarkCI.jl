@@ -461,8 +461,13 @@ function pushresult(;
         url = default_url
     end
     if sshkey === nothing
-        sshkey = String(base64decode(ENV["SSH_KEY"]))
+        let key = get(ENV, "SSH_KEY", "")
+            if key !== ""
+                sshkey = String(base64decode(key))
+            end
+        end
     end
+
     judgement = _loadjudge(workspace)
     if commit_info !== nothing
         open(joinpath(workspace, "commit_info.json"); write = true) do io
