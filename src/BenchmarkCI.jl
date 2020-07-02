@@ -472,7 +472,11 @@ function pushresult(;
     end
     if sshkey === nothing
         let key = get(ENV, "SSH_KEY", "")
-            if key !== ""
+            if key == ""
+                @info "Empty `SSH_KEY`. Skipping `pushresult`."
+                displayjudgement(workspace)
+                return
+            else
                 sshkey = String(base64decode(key))
             end
         end
