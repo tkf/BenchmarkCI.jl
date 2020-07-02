@@ -274,6 +274,8 @@ end
 
 function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
 
+    target_git_tree_sha1 = read(`git rev-parse $(target.id):`, String)
+    baseline_git_tree_sha1 = read(`git rev-parse $(baseline.id):`, String)
     noisily() do
         time_target = @elapsed group_target = PkgBenchmark.benchmarkpkg(
             pkgdir,
@@ -294,7 +296,12 @@ function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
         * Target: $(format_period(time_target))
         * Baseline: $(format_period(time_baseline))
         """
-        let runinfo = Dict(:time_target => time_target, :time_baseline => time_baseline)
+        let runinfo = Dict(
+                :time_target => time_target,
+                :time_baseline => time_baseline,
+                :target_git_tree_sha1 => target_git_tree_sha1,
+                :baseline_git_tree_sha1 => baseline_git_tree_sha1,
+            )
             open(joinpath(workspace, "runinfo.json"); write = true) do io
                 JSON.print(io, runinfo)
             end
