@@ -52,4 +52,38 @@ end
     end
 end
 
+@testset "_push_with_retry" begin
+    mktempdir() do dir
+        branch = "somebranch"
+        origin = joinpath(dir, "origin")
+        init_random_repo(origin, branch)
+        url = "file://" * abspath(origin)
+
+        workdir = joinpath(dir, "workdir")
+        run(`git clone $url $workdir`)
+
+        # Advance `origin`
+        cd(origin) do
+            run(`git checkout $branch`)
+            write("file-1", "hello")
+            run(`git add .`)
+            run(`git commit --message "Add file-1"`)
+            run(`git checkout -`)
+        end
+
+        cd(workdir) do
+            # Advance local `workdir`:
+            write("file-2", "hello")
+            run(`git add .`)
+            run(`git commit --message "Add file-2"`)
+
+            logs, = Test.collect_test_logs() do
+                GitUtils._push_with_retry(args -> `git $args`, branch)
+            end
+            all_messages = join((l.message for l in logs), "\n")
+            @test occursin("retrying", all_messages)
+        end
+    end
+end
+
 end  # module

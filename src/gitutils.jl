@@ -39,7 +39,7 @@ function updating(
                 run(git(`remote add origin $url`))
                 run(git(`checkout -b $branch`))
                 run(git(`commit --allow-empty --allow-empty-message --message=""`))
-                run(git(`push origin $branch`))
+                _push_with_retry(git, branch)
             end
         end
         cd(repodir) do
@@ -54,7 +54,7 @@ function updating(
                 run(git(`add --all`))
                 run(git(`commit --allow-empty-message --message $commit_message`))
             end
-            run(git(`push origin $branch`))
+            _push_with_retry(git, branch)
         end
     end
 end
@@ -77,6 +77,41 @@ function setup_git_user()
     # WARNING: This function is run via tests. Do NOT use `--global`.
     run(`git config user.email "$GITHUB_ACTOR@users.noreply.github.com"`)
     run(`git config user.name $GITHUB_ACTOR`)
+end
+
+printable(cmd::Cmd) = Cmd(cmd.exec::Vector{String})
+
+function saferun(cmd::Cmd; log = true)
+    @info "Executing $(printable(cmd))..."
+    try
+        return run(cmd)
+    catch err
+        log && @info "Failed to run: $(printable(cmd))"
+        @debug("Failed to run: $(printable(cmd))", exception = (err, catch_backtrace()),)
+        return nothing
+    end
+end
+
+function _push_with_retry(git, branch; timeout = 5 * 60, tries = 10)
+    t0 = time_ns()
+
+    push_cmd = git(`push origin "HEAD:refs/heads/$branch"`)
+    for i in 1:tries
+        if  saferun(push_cmd; log = false) !== nothing
+            @info "Successfully pushed branch `$branch` to remote."
+            return
+        end
+
+        if (time_ns() - t0) / 1e9 > timeout
+            @info "Timeout ($timeout seconds) reached."
+            break
+        end
+        @info "$i-th $(printable(push_cmd)) failed; retrying...."
+
+        saferun(git(`fetch origin $branch`)) == nothing && break
+        saferun(git(`merge --no-edit "origin/$branch"`)) == nothing && break
+    end
+    error("Failed to: $(printable(push_cmd))")
 end
 
 end  # module
