@@ -3,13 +3,16 @@ module TestUpdating
 using Test
 using BenchmarkCI: GitUtils
 
+function setup_dummy_user()
+    run(`git config user.email "DUMMY@users.noreply.github.com"`)
+    run(`git config user.name DUMMY`)
+end
+
 function init_random_repo(dir, branch)
     mkpath(dir)
     cd(dir) do
         run(`git init .`)
-
-        run(`git config user.email "DUMMY@users.noreply.github.com"`)
-        run(`git config user.name DUMMY`)
+        setup_dummy_user()
 
         run(`git checkout -b $branch`)
         write("README.txt", "hello")
@@ -61,6 +64,9 @@ end
 
         workdir = joinpath(dir, "workdir")
         run(`git clone $url $workdir`)
+        cd(workdir) do
+            setup_dummy_user()
+        end
 
         # Advance `origin`
         cd(origin) do
