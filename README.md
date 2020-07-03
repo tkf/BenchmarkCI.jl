@@ -49,7 +49,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-If you don't want to benchmark your codes for every pushes of every PR, then you can conditionally trigger jobs on label:
+If you don't want to benchmark your code for every push of every PR,
+then you can conditionally trigger the jobs on a label:
 
 ```yaml
 name: Run benchmarks
