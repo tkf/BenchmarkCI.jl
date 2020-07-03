@@ -49,6 +49,35 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+If you don't want to benchmark your codes for every pushes of every PR, then you can conditionally trigger jobs on label:
+
+```yaml
+name: Run benchmarks
+
+on:
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+
+# Only trigger the benchmark job when you add `run benchmark` label to the PR
+jobs:
+  Benchmark:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'run benchmark')
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: 1.4
+      - name: Install dependencies
+        run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
+      - name: Run benchmarks
+        run: julia -e 'using BenchmarkCI; BenchmarkCI.judge()'
+      - name: Post results
+        run: julia -e 'using BenchmarkCI; BenchmarkCI.postjudge()'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ### Setup with `benchmark/Manifest.toml`
 
 If `benchmark/Manifest.toml` is checked into the repository,
