@@ -99,7 +99,8 @@ function benchmarkci_info()
             :PkgBenchmark => string(@versionof(PkgBenchmark)),
             :BenchmarkTools => string(@versionof(BenchmarkTools)),
         ),
-        :format_version => typemin(Int) ÷ 2 + 0,
+        # Increment this when tweaking result format:
+        :format_version => typemin(Int) ÷ 2 + 1,
     )
 end
 
@@ -246,6 +247,7 @@ function judge(
             baseline = baseline,
             workspace = workspace,
             pkgdir = pkgdir,
+            benchmarkdir = dirname(script),
             benchmarkpkg_kwargs = (;
                 kwargs...,
                 logger_factory = logger_factory,
@@ -272,19 +274,19 @@ function noisily(f, yes::Bool = is_in_ci(); interval = 60 * 5)
     end
 end
 
-function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
+function _judge(; target, baseline, workspace, pkgdir, benchmarkdir, benchmarkpkg_kwargs)
 
-    target_git_tree_sha1 =
-        strip(read(`git rev-parse $(something(target.id, "HEAD")):`, String))
-    baseline_git_tree_sha1 =
-        strip(read(`git rev-parse $(something(baseline.id, "HEAD")):`, String))
+    target_git_info = git_commit_info(something(target.id, "HEAD"), benchmarkdir)
+    baseline_git_info = git_commit_info(something(baseline.id, "HEAD"), benchmarkdir)
     noisily() do
+        start_date = Dates.now()
         time_target = @elapsed group_target = PkgBenchmark.benchmarkpkg(
             pkgdir,
             target;
             resultfile = joinpath(workspace, "result-target.json"),
             benchmarkpkg_kwargs...,
         )
+        mid_date = Dates.now()
         @debug("`git status`", output = Text(read(`git status`, String)))
         @debug("`git diff`", output = Text(read(`git diff`, String)))
         time_baseline = @elapsed group_baseline = PkgBenchmark.benchmarkpkg(
@@ -293,19 +295,32 @@ function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
             resultfile = joinpath(workspace, "result-baseline.json"),
             benchmarkpkg_kwargs...,
         )
+        end_date = Dates.now()
         @info """
         Finish running benchmarks.
         * Target: $(format_period(time_target))
         * Baseline: $(format_period(time_baseline))
         """
-        let runinfo = Dict(
-                :time_target => time_target,
-                :time_baseline => time_baseline,
-                :target_git_tree_sha1 => target_git_tree_sha1,
-                :baseline_git_tree_sha1 => baseline_git_tree_sha1,
+        let run_info = Dict(
+                :target => merge!(
+                    Dict(
+                        :start_date => start_date,
+                        :end_date => mid_date,
+                        :elapsed_time => time_target,
+                    ),
+                    target_git_info,
+                ),
+                :baseline => merge!(
+                    Dict(
+                        :start_date => mid_date,
+                        :end_date => end_date,
+                        :elapsed_time => time_baseline,
+                    ),
+                    baseline_git_info,
+                ),
             )
-            open(joinpath(workspace, "runinfo.json"); write = true) do io
-                JSON.print(io, runinfo)
+            open(joinpath(workspace, "run_info.json"); write = true) do io
+                JSON.print(io, run_info)
             end
         end
         judgement = PkgBenchmark.judge(group_target, group_baseline)
@@ -314,6 +329,28 @@ function _judge(; target, baseline, workspace, pkgdir, benchmarkpkg_kwargs)
         end
         return judgement
     end
+end
+
+function git_commit_info(rev::AbstractString, benchmarkdir::AbstractString)
+    git = `git --no-pager`
+    git_tree_sha1_benchmark = try
+        strip(read(`$git rev-parse $rev:$benchmarkdir`, String))
+    catch err
+        nothing
+    end
+    git_tree_sha1_src = try
+        strip(read(`$git rev-parse $rev:src`, String))
+    catch err
+        nothing
+    end
+    info = Dict(
+        :git_tree_sha1 => strip(read(`$git rev-parse $rev:`, String)),
+        :git_tree_sha1_benchmark => git_tree_sha1_benchmark,
+        :git_tree_sha1_src => git_tree_sha1_src,
+        :git_commit_sha1 => strip(read(`$git rev-parse $rev`, String)),
+        :git_commit_date =>
+            strip(read(`$git show --no-patch --format=%cI $rev`, String)),
+    )
 end
 
 function _loadjudge(workspace)
