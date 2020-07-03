@@ -21,13 +21,8 @@ function check_workspace(workspace = BenchmarkCI.DEFAULT_WORKSPACE)
         @test d["elapsed_time"]::Real > 0
         @test length(d["git_tree_sha1"]::AbstractString) == 40
         @test length(d["git_commit_sha1"]::AbstractString) == 40
-        # TODO: make it work with BenchmarkCIExample.jl:
-        if d["git_tree_sha1_benchmark"] !== nothing
-            @test length(d["git_tree_sha1_benchmark"]::AbstractString) == 40
-        end
-        if d["git_tree_sha1_src"] !== nothing
-            @test length(d["git_tree_sha1_src"]::AbstractString) == 40
-        end
+        @test length(d["git_tree_sha1_benchmark"]::AbstractString) == 40
+        @test length(d["git_tree_sha1_src"]::AbstractString) == 40
     end
 end
 

@@ -333,6 +333,7 @@ end
 
 function git_commit_info(rev::AbstractString, benchmarkdir::AbstractString)
     git = `git --no-pager`
+    benchmarkdir = relpath(benchmarkdir)
     git_tree_sha1_benchmark = try
         strip(read(`$git rev-parse $rev:$benchmarkdir`, String))
     catch err
