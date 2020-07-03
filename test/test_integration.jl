@@ -3,20 +3,27 @@ module TestIntegration
 import JSON
 using BenchmarkCI
 using BenchmarkCI: mktempdir, versionof
+using Dates: DateTime
 using Test
 
 function check_workspace(workspace = BenchmarkCI.DEFAULT_WORKSPACE)
     @test isfile(joinpath(workspace, "Project.toml"))
     @test isfile(joinpath(workspace, "Manifest.toml"))
     metadata = JSON.parsefile(joinpath(workspace, "metadata.json"))
-    runinfo = JSON.parsefile(joinpath(workspace, "runinfo.json"))
+    run_info = JSON.parsefile(joinpath(workspace, "run_info.json"))
     @test metadata["BenchmarkCI"]["versions"]["BenchmarkCI"] ==
           string(versionof(BenchmarkCI))
     @test metadata["BenchmarkCI"]["format_version"]::Int < 0
-    @test runinfo["time_target"]::Real > 0
-    @test runinfo["time_baseline"]::Real > 0
-    @test length(runinfo["target_git_tree_sha1"]::AbstractString) == 40
-    @test length(runinfo["baseline_git_tree_sha1"]::AbstractString) == 40
+    @testset for side in ["target", "baseline"]
+        d = run_info[side]
+        @test DateTime(d["start_date"]) isa Any
+        @test DateTime(d["end_date"]) isa Any
+        @test d["elapsed_time"]::Real > 0
+        @test length(d["git_tree_sha1"]::AbstractString) == 40
+        @test length(d["git_commit_sha1"]::AbstractString) == 40
+        @test length(d["git_tree_sha1_benchmark"]::AbstractString) == 40
+        @test length(d["git_tree_sha1_src"]::AbstractString) == 40
+    end
 end
 
 @testset "BenchmarkCI.jl" begin
