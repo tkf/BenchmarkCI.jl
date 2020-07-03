@@ -100,7 +100,7 @@ function benchmarkci_info()
             :BenchmarkTools => string(@versionof(BenchmarkTools)),
         ),
         # Increment this when tweaking result format:
-        :format_version => typemin(Int) ÷ 2 + 1,
+        :format_version => -4611686018427387904 + 1,
     )
 end
 
