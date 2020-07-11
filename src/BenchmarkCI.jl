@@ -7,7 +7,6 @@ import GitHub
 import JSON
 import LinearAlgebra
 import Markdown
-import Pkg
 import Tar
 using Base64: base64decode
 using Logging: ConsoleLogger
@@ -31,17 +30,30 @@ end
 include("runtimeinfo.jl")
 include("gitutils.jl")
 
-const BENCHMARK_CI_VERSION = let
-    proj = TOML.parsefile(joinpath((@__DIR__), "..", "Project.toml"))
-    VersionNumber(proj["version"])
+function versionof(pkg::Module)
+    filepath = pathof(pkg)
+    if filepath === nothing
+        @error "`pathof($pkg)` does not return a path"
+        return nothing
+    end
+    projpath = joinpath(dirname(dirname(abspath(filepath))), "Project.toml")
+    if !isfile(projpath)
+        @error "`$projpath` does not exist"
+        return nothing
+    end
+    try
+        proj = TOML.parsefile(projpath)
+        return VersionNumber(proj["version"])
+    catch err
+        @error(
+            "Failed to read version from `$projpath`",
+            exception = (err, catch_backtrace())
+        )
+        return nothing
+    end
 end
 
-versionof(pkg::Module) = versionof(Base.PkgId(pkg))
-if isdefined(Pkg, :dependencies)
-    versionof(pkg::Base.PkgId) = Pkg.dependencies()[pkg.uuid].version
-else
-    versionof(pkg::Base.PkgId) = Pkg.installed()[pkg.name]
-end
+const BENCHMARK_CI_VERSION = versionof(@__MODULE__)
 
 macro versionof(pkg::Symbol)
     QuoteNode(versionof(getproperty(__module__, pkg)))
