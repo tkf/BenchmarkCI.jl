@@ -1,7 +1,14 @@
 module TestMisc
 
+import LinearAlgebra
 using BenchmarkCI
 using Test
+
+@testset "versionof" begin
+    @test (@test_logs (:error,) BenchmarkCI.versionof(Base)) === nothing
+    @test (@test_logs (:error,) BenchmarkCI.versionof(LinearAlgebra)) === nothing
+    @test (@test_logs (:error,) BenchmarkCI.versionof(LinearAlgebra.BLAS)) === nothing
+end
 
 @testset "format_period" begin
     @test BenchmarkCI.format_period(3) == "3 seconds"
