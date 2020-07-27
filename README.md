@@ -124,7 +124,7 @@ may be useful.
 
 Alternatively, the benchmark result and report markdown can be pushed
 to a git branch `benchmark-results`
-([example](https://github.com/tkf/BenchmarkCI.jl/tree/benchmark-results)).
+([example](https://github.com/tkf/BenchmarkCI-data/tree/benchmark-results)).
 
 ```yaml
       - name: Push results
