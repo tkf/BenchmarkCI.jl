@@ -561,8 +561,7 @@ function pushresult(;
             "state" => "success",
             "context" => "benchmarkci/$title",
             "description" => "Benchmarks complete!",
-            "target_url" =>
-                "https://github.com/$(repo.full_name)/blob/$branch/$datadir/result.md",
+            "target_url" => as_target_url(url, branch, datadir),
         )
         @info "Creating status" sha params = status_params
         GitHub.create_status(repo, sha; auth = auth, params = status_params)
@@ -584,6 +583,20 @@ function github_sha()
     elseif get(ENV, "GITHUB_EVENT_NAME", nothing) == "push"
         return ENV["GITHUB_SHA"]
     end
+end
+
+function as_https(url::AbstractString)
+    if (m = match(r"^git@github.com:([^/]+)/(.*?)(\.git)?$", url)) !== nothing
+        # handle `git@github.com:$USER/$REPO.git`
+        return "https://github.com/$(m[1])/$(m[2])"
+    end
+    return nothing
+end
+
+function as_target_url(url::AbstractString, branch::AbstractString, datadir::AbstractString)
+    https = as_https(url)
+    https === nothing && return nothing
+    return "$https/blob/$branch/$datadir/result.md"
 end
 
 struct GitHubCommitInfo
