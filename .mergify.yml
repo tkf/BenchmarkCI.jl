@@ -8,8 +8,7 @@ pull_request_rules:
     conditions:
       - base=master
       - "#approved-reviews-by>=1"
-      - status-success~=Test Julia .*
-      - -status-failure~=Test Julia [0-9].*
+      - status-success=Test Julia 1.4
       - status-success=Benchmark
       - status-success=Documenter
       - label=ready-to-merge:squash
@@ -21,8 +20,7 @@ pull_request_rules:
     conditions:
       - base=master
       - "#approved-reviews-by>=1"
-      - status-success~=Test Julia .*
-      - -status-failure~=Test Julia [0-9].*
+      - status-success=Test Julia 1.4
       - status-success=Benchmark
       - status-success=Documenter
       - label=ready-to-merge:rebase
@@ -34,8 +32,7 @@ pull_request_rules:
     conditions:
       - base=master
       - "#approved-reviews-by>=1"
-      - status-success~=Test Julia .*
-      - -status-failure~=Test Julia [0-9].*
+      - status-success=Test Julia 1.4
       - status-success=Benchmark
       - status-success=Documenter
       - label=ready-to-merge:merge
@@ -47,8 +44,7 @@ pull_request_rules:
     conditions:
       - author=tkf
       - base=master
-      - status-success~=Test Julia .*
-      - -status-failure~=Test Julia [0-9].*
+      - status-success=Test Julia 1.4
       - status-success=Benchmark
       - status-success=Documenter
       - label~=ready-to-merge:.*
