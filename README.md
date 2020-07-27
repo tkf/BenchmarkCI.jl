@@ -1,6 +1,7 @@
 # BenchmarkCI.jl
 
 ![Lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
+[![Latest documentation][docs-dev-img]][docs-dev-url]
 [![CI Status][ci-img]][ci-url]
 [![codecov.io][codecov-img]][codecov-url]
 
@@ -153,3 +154,5 @@ julia> BenchmarkCI.displayjudgement()
 [ci-url]: https://github.com/tkf/BenchmarkCI.jl/actions?query=workflow%3A%22Run+tests%22
 [codecov-img]: http://codecov.io/github/tkf/BenchmarkCI.jl/coverage.svg?branch=master
 [codecov-url]: http://codecov.io/github/tkf/BenchmarkCI.jl?branch=master
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://tkf.github.io/BenchmarkCI.jl/dev

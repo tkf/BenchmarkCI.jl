@@ -1,3 +1,11 @@
+"""
+    BenchmarkCI
+
+* [`BenchmarkCI.judge`](@ref): Run `benchmarkpkg` on `target` and `baseline`.
+* [`BenchmarkCI.postjudge`](@ref): Post judgement as comment.
+* [`BenchmarkCI.displayjudgement`](@ref): Print result of `BenchmarkCI.judge`.
+* [`BenchmarkCI.pushresult`](@ref): Push benchmark result to a repository.
+"""
 module BenchmarkCI
 
 import BenchmarkTools
@@ -379,7 +387,7 @@ _loadciresult(workspace::AbstractString = DEFAULT_WORKSPACE) =
 """
     postjudge(; title = "Benchmark result")
 
-Post judgement as comment.
+Post judgement as a comment in the corresponding pull request.
 """
 postjudge(workspace::AbstractString = DEFAULT_WORKSPACE; kwargs...) =
     postjudge(_loadjudge(workspace); kwargs...)
@@ -495,7 +503,7 @@ Push benchmark result to `branch` in `url`.
 - `branch::AbstractString = "benchmark-results"`: Branch where the
   results are pushed.
 - `sshkey::Union{AbstractString,Nothing} = nothing`: Documenter.jl-style
-  SSH private key (base64-encoded private key).
+  SSH private key (base64-encoded private key).  Default to `ENV["SSH_KEY"]`.
 - `title::AbstractString = "Benchmark result"`: The title to be used in
   benchmark report.
 """
