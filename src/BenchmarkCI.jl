@@ -699,7 +699,4 @@ end
 
 runall(args...; kwargs...) = postjudge(judge(args...; kwargs...))
 
-# Use README as the docstring of the module:
-@doc read(joinpath(dirname(@__DIR__), "README.md"), String) BenchmarkCI
-
 end # module
