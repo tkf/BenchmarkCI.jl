@@ -27,3 +27,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
+      - name: Push results (BenchmarkCIArtifacts)
+        run: julia -e '
+          using BenchmarkCI;
+          BenchmarkCI.pushresult(;
+              url = "git@github.com:tkf/BenchmarkCIArtifacts.git",
+              title = "Benchmark result (BenchmarkCIArtifacts)",
+          );
+          '
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SSH_KEY: ${{ secrets.ARTIFACTS_SSH_KEY }}
