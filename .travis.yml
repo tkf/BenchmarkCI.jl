@@ -16,9 +16,10 @@ install:
   - unset JULIA_PROJECT
   - julia -e 'using Pkg; pkg"add PkgBenchmark"'
   - julia -e 'using Pkg; pkg"dev ."'
-script:
+before_script:
   - julia -e 'using BenchmarkCI; BenchmarkCI.judge()'
   - julia -e 'using BenchmarkCI; BenchmarkCI.displayjudgement()'
+script:
   - julia -e '
     using BenchmarkCI;
     BenchmarkCI.pushresult(;
