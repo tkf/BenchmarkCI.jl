@@ -1,0 +1,35 @@
+# Documentation: http://docs.travis-ci.com/user/languages/julia/
+language: julia
+os:
+  - linux
+julia:
+  - 1.5
+notifications:
+  email: false
+
+# Only build branches via PR
+# https://docs.travis-ci.com/user/conditional-builds-stages-jobs
+# https://docs.travis-ci.com/user/conditions-v1
+if: type != push
+
+install:
+  - unset JULIA_PROJECT
+  - julia -e 'using Pkg; pkg"add PkgBenchmark"'
+  - julia -e 'using Pkg; pkg"dev ."'
+script:
+  - julia -e 'using BenchmarkCI; BenchmarkCI.judge()'
+  - julia -e 'using BenchmarkCI; BenchmarkCI.displayjudgement()'
+  - julia -e '
+    using BenchmarkCI;
+    BenchmarkCI.postjudge(;
+        url = "git@github.com:tkf/BenchmarkCI-data.git",
+        title = "Benchmark result (via Travis)",
+        branch = "travis-benchmark-results",
+    );
+    '
+after_script: lscpu
+
+jobs:
+  allow_failures:
+    - julia: nightly
+  fast_finish: true
