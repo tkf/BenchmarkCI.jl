@@ -134,6 +134,9 @@ to a git branch `benchmark-results`
           SSH_KEY: ${{ secrets.DOCUMENTER_KEY }}
 ```
 
+This method can also be used in Travis CI.  See
+[this example `.travis.yml`](.travis.yml).
+
 **WARNING**: Storage format may be changed across releases.
 
 ## Running BenchmarkCI interactively
