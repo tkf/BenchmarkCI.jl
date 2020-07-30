@@ -120,7 +120,52 @@ function benchmarkci_info()
             :BenchmarkTools => string(@versionof(BenchmarkTools)),
         ),
         # Increment this when tweaking result format:
-        :format_version => -4611686018427387904 + 1,
+        :format_version => -4611686018427387904 + 2,
+    )
+end
+
+function julia_info(cmd::Cmd)
+    # Using `load_path_setup_code` requires that `cmd` and this
+    # `julia` is compatible enough s.t. same JSON.jl version works.
+    code = """
+    $(Base.load_path_setup_code())
+    let JSON = Base.require(Base.PkgId(
+            Base.UUID("682c06a0-de6a-54ab-a142-c8b1cf79cde6"),
+            "JSON",
+        ))
+        JSON.print(
+            Dict(
+                :VERSION => string(VERSION),
+                :libm_name => Base.libm_name,
+                :libllvm_version => string(Base.libllvm_version),
+                :Sys => Dict(
+                    :WORD_SIZE => Sys.WORD_SIZE,
+                    :JIT => Sys.JIT,
+                    :CPU_NAME => Sys.CPU_NAME,
+                ),
+            )
+        )
+    end
+    """
+    return open(JSON.parse, `$cmd --startup-file=no -e $code`)
+end
+
+function metadata_from(; target, baseline, pkgdir, script, project)
+    return Dict(
+        :target => target,
+        :target_julia_info => julia_info(target.juliacmd),
+        :baseline => baseline,
+        :baseline_julia_info => (
+            if target.juliacmd.exec[1] == baseline.juliacmd.exec[1]
+                nothing
+            else
+                julia_info(baseline.juliacmd)
+            end
+        ),
+        :pkgdir => pkgdir,
+        :script => script,
+        :project => project,
+        :BenchmarkCI => benchmarkci_info(),
     )
 end
 
@@ -235,13 +280,12 @@ function judge(
     mkpath(workspace)
     script_wrapper = abspath(joinpath(workspace, "benchmarks_wrapper.jl"))
 
-    let metadata = Dict(
-            :target => target,
-            :baseline => baseline,
-            :pkgdir => pkgdir,
-            :script => script,
-            :project => project,
-            :BenchmarkCI => benchmarkci_info(),
+    let metadata = metadata_from(;
+            target = target,
+            baseline = baseline,
+            pkgdir = pkgdir,
+            script = script,
+            project = project,
         )
         open(joinpath(workspace, "metadata.json"); write = true) do io
             JSON.print(io, metadata)

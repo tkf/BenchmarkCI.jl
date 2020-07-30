@@ -14,6 +14,8 @@ function check_workspace(workspace = BenchmarkCI.DEFAULT_WORKSPACE)
     @test metadata["BenchmarkCI"]["versions"]["BenchmarkCI"] ==
           string(versionof(BenchmarkCI))
     @test metadata["BenchmarkCI"]["format_version"]::Int < 0
+    @test VersionNumber(metadata["target_julia_info"]["VERSION"]) == VERSION
+    @test metadata["target_julia_info"]["Sys"]["WORD_SIZE"] == Sys.WORD_SIZE
     @testset for side in ["target", "baseline"]
         d = run_info[side]
         @test DateTime(d["start_date"]) isa Any
