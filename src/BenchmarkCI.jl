@@ -120,7 +120,7 @@ function benchmarkci_info()
             :BenchmarkTools => string(@versionof(BenchmarkTools)),
         ),
         # Increment this when tweaking result format:
-        :format_version => -4611686018427387904 + 2,
+        :format_version => -4611686018427387904 + 3,
     )
 end
 
@@ -162,10 +162,39 @@ function metadata_from(; target, baseline, pkgdir, script, project)
                 julia_info(baseline.juliacmd)
             end
         ),
+        :cpu_info => cpu_info(),
         :pkgdir => pkgdir,
         :script => script,
         :project => project,
         :BenchmarkCI => benchmarkci_info(),
+    )
+end
+
+function cpu_info()
+    return Dict(
+        :cpubrand => CpuId.cpubrand(),
+        :cachesize => CpuId.cachesize(),
+        :cpumodel => CpuId.cpumodel(),
+        :address_size => CpuId.address_size(),
+        :physical_address_size => CpuId.physical_address_size(),
+        :cachelinesize => CpuId.cachelinesize(),
+        :cpucores => CpuId.cpucores(),
+        :cputhreads => CpuId.cputhreads(),
+        :cpu_base_frequency => CpuId.cpu_base_frequency(),
+        :cpu_max_frequency => CpuId.cpu_max_frequency(),
+        :cpu_bus_frequency => CpuId.cpu_bus_frequency(),
+        :simdbytes => CpuId.simdbytes(),
+        :cpufeature => Dict(
+            :TSC => CpuId.cpufeature(CpuId.TSC),
+            :TSCINV => CpuId.cpufeature(CpuId.TSCINV),
+            :PDCM => CpuId.cpufeature(CpuId.PDCM),
+            :PDCM => CpuId.cpufeature(CpuId.PDCM),
+        ),
+        :perf_revision => CpuId.perf_revision(),
+        :perf_fix_counters => CpuId.perf_fix_counters(),
+        :perf_fix_bits => CpuId.perf_fix_bits(),
+        :perf_gen_counters => CpuId.perf_gen_counters(),
+        :perf_gen_bits => CpuId.perf_gen_bits(),
     )
 end
 
