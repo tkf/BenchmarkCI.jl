@@ -2,7 +2,8 @@ module TestMisc
 
 import LinearAlgebra
 using BenchmarkCI
-using BenchmarkCI: as_https, as_target_url
+using BenchmarkCI: as_https, as_target_url, metadata_from
+using PkgBenchmark: BenchmarkConfig
 using Test
 
 @testset "versionof" begin
@@ -14,6 +15,24 @@ end
 @testset "format_period" begin
     @test BenchmarkCI.format_period(3) == "3 seconds"
     @test BenchmarkCI.format_period(125) == "2 minutes 5 seconds"
+end
+
+@testset "metadata" begin
+    if !Sys.iswindows()
+        metadata = mktempdir() do path
+            fakejulia = joinpath(path, "julia")
+            symlink(Base.julia_cmd().exec[1], fakejulia)
+            metadata_from(;
+                target = BenchmarkConfig(),
+                baseline = BenchmarkConfig(juliacmd = `$fakejulia`),
+                pkgdir = :dummy,
+                script = :dummy,
+                project = :dummy,
+            )
+        end
+        @test metadata[:target_julia_info] != nothing
+        @test metadata[:baseline_julia_info] != nothing
+    end
 end
 
 @testset "as_https" begin
