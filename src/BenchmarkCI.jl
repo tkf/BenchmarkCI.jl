@@ -544,8 +544,8 @@ function post_judge_github(event_path, ciresult)
     # https://developer.github.com/v3/activity/events/types/#pullrequestevent
     @debug "Posting to: $url"
 
-    GITHUB_TOKEN = get(ENV, "GITHUB_TOKEN", nothing)
-    GITHUB_TOKEN === nothing && error_on_missing_github_token()
+    GITHUB_TOKEN = strip(get(ENV, "GITHUB_TOKEN", ""))
+    isempty(GITHUB_TOKEN) && error_on_missing_github_token()
 
     cmd = ```
     curl
