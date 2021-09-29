@@ -16,7 +16,7 @@ end
 
 Base.@kwdef struct RunTimeInfo
     blas_num_threads::Union{Int,Nothing} = blas_num_threads()
-    blas_vendor::Symbol = LinearAlgebra.BLAS.vendor()
+    blas_vendor::Symbol = blas_vendor()
     lscpu::Union{String,Nothing} = safe_lscpu()
 end
 
@@ -47,6 +47,13 @@ function Base.show(io::IO, ::MIME"text/markdown", info::RunTimeInfo)
 end
 
 
+if isdefined(LinearAlgebra.BLAS, :get_config)
+    blas_vendor() = :libblastrampoline  # TODO:
+else
+    blas_vendor() = LinearAlgebra.BLAS.vendor()
+end
+
+
 """
     blas_num_threads() :: Union{Int, Nothing}
 
@@ -57,7 +64,10 @@ https://github.com/JuliaLang/julia/blob/v1.3.0/stdlib/Distributed/test/distribut
 
 See also: https://stackoverflow.com/a/37516335
 """
-function blas_num_threads()
+blas_num_threads() =
+    VERSION < v"1.6" ? blas_num_threads_jl10() : LinearAlgebra.BLAS.get_num_threads()
+
+function blas_num_threads_jl10()
     blas = LinearAlgebra.BLAS.vendor()
     # Wrap in a try to catch unsupported blas versions
     try
