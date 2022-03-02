@@ -57,24 +57,4 @@ https://github.com/JuliaLang/julia/blob/v1.3.0/stdlib/Distributed/test/distribut
 
 See also: https://stackoverflow.com/a/37516335
 """
-function blas_num_threads()
-    blas = LinearAlgebra.BLAS.vendor()
-    # Wrap in a try to catch unsupported blas versions
-    try
-        if blas == :openblas
-            return ccall((:openblas_get_num_threads, Base.libblas_name), Cint, ())
-        elseif blas == :openblas64
-            return ccall((:openblas_get_num_threads64_, Base.libblas_name), Cint, ())
-        elseif blas == :mkl
-            return ccall((:MKL_Get_Max_Num_Threads, Base.libblas_name), Cint, ())
-        end
-
-        # OSX BLAS looks at an environment variable
-        if Sys.isapple()
-            return tryparse(Cint, get(ENV, "VECLIB_MAXIMUM_THREADS", "1"))
-        end
-    catch
-    end
-
-    return nothing
-end
+blas_num_threads() = LinearAlgebra.BLAS.get_num_threads()
