@@ -48,7 +48,7 @@ end
 
 
 """
-    blas_num_threads() :: Union{Int, Nothing}
+    blas_num_threads_old() :: Union{Int, Nothing}
 
 Get the number of threads BLAS is using.
 
@@ -57,7 +57,7 @@ https://github.com/JuliaLang/julia/blob/v1.3.0/stdlib/Distributed/test/distribut
 
 See also: https://stackoverflow.com/a/37516335
 """
-function blas_num_threads()
+function blas_num_threads_old()
     blas = LinearAlgebra.BLAS.vendor()
     # Wrap in a try to catch unsupported blas versions
     try
@@ -77,4 +77,15 @@ function blas_num_threads()
     end
 
     return nothing
+end
+
+"""
+    blas_num_threads() :: Union{Int, Nothing}
+
+Get the number of threads BLAS is using.
+"""
+const blas_num_threads = try
+    LinearAlgebra.BLAS.get_num_threads
+catch
+    blas_num_threads_old
 end
