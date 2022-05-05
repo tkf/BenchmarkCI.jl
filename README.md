@@ -141,6 +141,12 @@ This method can also be used in Travis CI.  See
 
 **WARNING**: Storage format may be changed across releases.
 
+### Example packages
+
+Here are some packages that have set up BenchmarkCI.jl:
+
+- [PNGFiles.jl](https://github.com/JuliaIO/PNGFiles.jl): [workflow file](https://github.com/JuliaIO/PNGFiles.jl/blob/master/.github/workflows/benchmark.yml)
+
 ## Running BenchmarkCI interactively
 
 ```
